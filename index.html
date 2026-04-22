@@ -3798,9 +3798,10 @@ function renderSettings(tab){
 
     <div class="card">
       <div class="lbl" style="margin-bottom:10px">Supabase</div>
-      <div class="fld"><div class="lbl">URL</div><input class="inp" value="${esc(SB_URL)}" disabled style="opacity:.4;font-size:11px;font-family:'DM Mono',monospace"></div>
-      <div class="fld" style="margin-bottom:12px"><div class="lbl">Key</div><input class="inp" type="password" value="${esc(SB_KEY)}" disabled style="opacity:.4"></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div class="fld"><div class="lbl">URL</div><input class="inp" id="sec-url" value="${esc(SB_URL)}" style="font-size:11px;font-family:'DM Mono',monospace"></div>
+      <div class="fld" style="margin-bottom:12px"><div class="lbl">Key</div><input class="inp" id="sec-key" type="password" value="${esc(SB_KEY)}"></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-acc" onclick="saveCredsFromSettings()">Guardar credenciales</button>
         <button class="btn btn-acc" onclick="connectSb()">Probar conexión</button>
         <span style="font-size:12px;display:flex;align-items:center;gap:5px;color:${sbConn?'var(--green)':'var(--red)'}">
           <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
