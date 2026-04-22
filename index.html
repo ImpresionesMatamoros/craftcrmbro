@@ -861,8 +861,8 @@ function resetLockTimer(){
 // ═══════════════════════════════════════════
 // ── Credentials: loaded from localStorage if present ──
 // Defaults are the project credentials. User can override in Settings → DB.
-const SB_URL_DEFAULT='https://qrllwqoobqkfcqviquhz.supabase.co';
-const SB_KEY_DEFAULT='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFybGx3cW9vYnFrZmNxdmlxdWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjcyMTQsImV4cCI6MjA5MTQ0MzIxNH0.jv9Q07hAZhaCsx4cFkr56sg-Zf8Lkm6ZwEn-Bkp7QZE';
+const SB_URL_DEFAULT='';
+const SB_KEY_DEFAULT='';
 // ── GOOGLE DRIVE CONFIG ──────────────────────────────
 let DRIVE_CFG = {
   clientEmail: '',
@@ -916,9 +916,9 @@ let SB_URL, SB_KEY;
 (function loadCreds(){
   try{
     const stored=localStorage.getItem('craftcrm_creds');
-    if(stored){const c=JSON.parse(stored);SB_URL=c.url||SB_URL_DEFAULT;SB_KEY=c.key||SB_KEY_DEFAULT;}
-    else{SB_URL=SB_URL_DEFAULT;SB_KEY=SB_KEY_DEFAULT;}
-  }catch(e){SB_URL=SB_URL_DEFAULT;SB_KEY=SB_KEY_DEFAULT;}
+    if(stored){const c=JSON.parse(stored);SB_URL=c.url||'';SB_KEY=c.key||'';}
+    else{SB_URL='';SB_KEY='';}
+  }catch(e){SB_URL='';SB_KEY='';}
 })();
 // Load MP token from sessionStorage (survives page reload within same tab)
 (function loadMPToken(){
