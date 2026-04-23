@@ -637,6 +637,11 @@ select.lf-inp{cursor:pointer;}
       <span class="rb-label">Órdenes</span>
       <span class="tip">Órdenes</span>
     </button>
+    <button class="rb" id="rb-dashboard" onclick="navigate('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      <span class="rb-label">Dashboard</span>
+      <span class="tip">Dashboard</span>
+    </button>
     <button class="rb" id="rb-kanban" onclick="navigate('kanban')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
       <span class="rb-label">Producción</span>
@@ -897,6 +902,27 @@ let BRAND={name:'CraftCRM',logoUrl:'',theme:'forest',custom:{c1:'#d4ff47',c2:'#3
 // Legacy compat
 const ACCENT_PRESETS=['#d4ff47','#ff6b35','#00d4ff','#ff4db8','#7c3aed','#10b981','#f59e0b','#ef4444'];
 
+// ── TAX CONFIG ──
+// taxRates: array of {id, label, rate (0-100), enabled}
+const TAX_KEY = 'craftcrm_taxes';
+let TAX_CONFIG = [];
+function loadTaxConfig(){
+  try{const s=localStorage.getItem(TAX_KEY);if(s)TAX_CONFIG=JSON.parse(s);}catch(e){}
+  if(!Array.isArray(TAX_CONFIG)||TAX_CONFIG.length===0){
+    TAX_CONFIG=[{id:'iva',label:'IVA',rate:16,enabled:true}];
+  }
+}
+function saveTaxConfig(){localStorage.setItem(TAX_KEY,JSON.stringify(TAX_CONFIG));}
+// Returns the single "active" tax rate for use in OF (backward compat with OF.iva toggle)
+function getActiveTaxRate(){
+  const active=TAX_CONFIG.find(t=>t.enabled);
+  return active?parseFloat(active.rate)||0:0;
+}
+function getActiveTaxLabel(){
+  const active=TAX_CONFIG.find(t=>t.enabled);
+  return active?active.label:'Impuesto';
+}
+
 function loadBrand(){
   try{
     const s=localStorage.getItem('craftcrm_brand_v3');
@@ -1048,10 +1074,10 @@ function ctxClear(){const bc=$('ctx-bc');if(bc)bc.innerHTML=`<span>${esc(BRAND.n
 function navigate(page){
   curPage=page;
   _lpSelectedId=null;
-  ['orders','kanban','taller','calendar','products','clients','suppliers','settings'].forEach(p=>$(`rb-${p}`)?.classList.toggle('on',p===page));
+  ['orders','dashboard','kanban','taller','calendar','products','clients','suppliers','settings'].forEach(p=>$(`rb-${p}`)?.classList.toggle('on',p===page));
   lpHide();dpHide();ctxClear();
   if(!sbConn&&page!=='settings'){renderSetup();return;}
-  ({orders:renderOrders,kanban:renderKanban,taller:renderTaller,calendar:renderCalendar,products:renderProducts,clients:renderClients,suppliers:renderSuppliers,settings:renderSettings}[page]||renderOrders)();
+  ({orders:renderOrders,dashboard:renderDashboard,kanban:renderKanban,taller:renderTaller,calendar:renderCalendar,products:renderProducts,clients:renderClients,suppliers:renderSuppliers,settings:renderSettings}[page]||renderOrders)();
 }
 
 // ══ SETUP ══
@@ -2231,10 +2257,13 @@ function calcTotals() {
   const sub = OF.lines.reduce((s, l) => s + (parseFloat(l.subtotal) || 0), 0);
   const disc = sub * (parseFloat(OF.descuento_pct) || 0) / 100;
   const after = sub - disc;
-  const iva = OF.iva ? after * 0.16 : 0;
+  const taxRate = getActiveTaxRate();
+  const iva = OF.iva ? after * (taxRate / 100) : 0;
   return { sub, disc, after, iva, total: after + iva };
 }
 function buildTotalsHTML(tot){
+  const taxRate=getActiveTaxRate();
+  const taxLabel=getActiveTaxLabel();
   return`
     <div class="tot-row"><span>Subtotal</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.sub)}</span></div>
     <div class="tot-row">
@@ -2246,7 +2275,7 @@ function buildTotalsHTML(tot){
       <span style="font-family:'DM Mono',monospace;color:${tot.disc>0?'var(--red)':'var(--t3)'}">${tot.disc>0?'−$'+fmt(tot.disc):'—'}</span>
     </div>
     <div class="tot-row">
-      <span><button class="iva-btn${OF.iva?' on':''}" onclick="OF.iva=!OF.iva;refreshTotals()">${OF.iva?'✓ ':''} IVA 16%</button></span>
+      <span><button class="iva-btn${OF.iva?' on':''}" onclick="OF.iva=!OF.iva;refreshTotals()">${OF.iva?'✓ ':''} ${taxLabel}${taxRate?` ${taxRate}%`:''}</button></span>
       <span style="font-family:'DM Mono',monospace;color:${OF.iva?'var(--t1)':'var(--t3)'}">${OF.iva?'$'+fmt(tot.iva):'—'}</span>
     </div>
     <div class="tot-total"><span>Total</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.total)}&nbsp;${OF.moneda}</span></div>`;
@@ -2768,7 +2797,9 @@ function printOrder() {
   <div class="totals">
     <div class="tot-row"><span>Subtotal</span><span>$${fmt(tot.sub)}</span></div>
     ${tot.disc>0?`<div class="tot-row"><span>Descuento (${OF.descuento_pct}%)</span><span>-$${fmt(tot.disc)}</span></div>`:''}
-    ${OF.iva?`<div class="tot-row"><span>IVA (16%)</span><span>$${fmt(tot.iva)}</span></div>`:''}
+    ${OF.iva?`<div class="tot-row"><span>${getActiveTaxLabel()}${getActiveTaxRate()?` (${getActiveTaxRate()}%)`:''}
+</span><span>$${fmt(tot.iva)}</span></div>`:''}
+
     <div class="tot-final"><span>Total</span><span>$${fmt(tot.total)} ${OF.moneda}</span></div>
   </div>
   ${OF.notas?`<div class="notes"><strong>Notas:</strong> ${esc(OF.notas)}</div>`:''}
@@ -2807,7 +2838,7 @@ Tu cotización de *${esc(BRAND.name || 'CraftCRM')}*:
 
 ${lines}
 
-${tot.disc > 0 ? `Descuento: -$${fmt(tot.disc)}\n` : ''}${OF.iva ? `IVA: $${fmt(tot.iva)}\n` : ''}_Total: *$${fmt(tot.total)} ${OF.moneda}*_
+${tot.disc > 0 ? `Descuento: -$${fmt(tot.disc)}\n` : ''}${OF.iva ? `${getActiveTaxLabel()}: $${fmt(tot.iva)}\n` : ''}_Total: *$${fmt(tot.total)} ${OF.moneda}*_
 
 ${OF.fecha_entrega ? `📅 Fecha de entrega: ${fmtDateES(OF.fecha_entrega)}` : ''}
 ${OF.notas ? `\n📝 ${OF.notas}` : ''}
@@ -3270,7 +3301,7 @@ let _settingsTab='branding'; // 'branding' | 'theme' | 'categories' | 'data' | '
 
 function renderSettings(tab){
   if(tab)_settingsTab=tab;
-  const tabs=[['branding','Marca'],['theme','Tema'],['categories','Categorías'],['data','Datos'],['seguridad','Seguridad'],['db','Base de datos']];
+  const tabs=[['branding','Marca'],['theme','Tema'],['categories','Categorías'],['impuestos','Impuestos'],['data','Datos'],['seguridad','Seguridad'],['db','Base de datos']];
   const swatches=ACCENT_PRESETS.map(h=>`<div class="swatch${BRAND.accentHex===h?' on':''}" style="background:${h}" data-hex="${h}" onclick="setAccent('${h}')" title="${h}"></div>`).join('');
 
   $('main').innerHTML=`<div class="page page-sm">
@@ -3383,6 +3414,8 @@ function renderSettings(tab){
       <div style="font-size:13px;color:var(--t3);margin-bottom:12px">Sin categorías — agrega las que uses en tu negocio</div>
       <div style="font-size:11px;color:var(--t3);line-height:1.6">Ejemplos: Imprenta, Señalética, Textiles, Servicios, Gran formato...</div>
     </div>`:buildCatList()}`:
+
+    _settingsTab==='impuestos'?renderTaxSettings():
 
     _settingsTab==='data'?`
     <div class="card" style="margin-bottom:8px">
@@ -4652,10 +4685,156 @@ function resetCredsFromSettings(){
   toast('Credenciales restauradas');
   renderSettings('seguridad');
 }
+// ════════════════════════════════════════════════════════
+//  DASHBOARD — Urgentes e importantes
+// ════════════════════════════════════════════════════════
+function renderDashboard(){
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const in3=new Date(now);in3.setDate(in3.getDate()+3);
+  const in3Str=in3.toISOString().slice(0,10);
+  const in7=new Date(now);in7.setDate(in7.getDate()+7);
+  const in7Str=in7.toISOString().slice(0,10);
+
+  const active=DATA.ordenes.filter(o=>!['entregada','cancelada'].includes(o.status));
+  const overdue=active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)<todayStr);
+  const todayDue=active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===todayStr);
+  const soon=active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>todayStr&&o.fecha_entrega.slice(0,10)<=in3Str);
+  const thisWeek=active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>in3Str&&o.fecha_entrega.slice(0,10)<=in7Str);
+  const noDate=active.filter(o=>!o.fecha_entrega);
+  const inProd=active.filter(o=>o.status==='en_produccion');
+  const readyToDeliver=active.filter(o=>o.status==='lista');
+
+  // Financial stats
+  const monthTotal=DATA.ordenes.filter(o=>{const d=new Date(o.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+  const pendingPayment=active.filter(o=>{const t=parseFloat(o.total||0);const p=parseFloat(o.pagado||0);return t>0&&p<t-0.01;}).reduce((s,o)=>s+(parseFloat(o.total||0)-parseFloat(o.pagado||0)),0);
+  const activeVal=active.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+
+  const urgentCard=(o,badge,badgeColor)=>{
+    const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
+    const sc=SC_HEX[o.status]||'#555';
+    const daysLeft=o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
+    return`<div class="order-row" onclick="openEditOrder('${o.id}')" style="border-left:3px solid ${badgeColor};cursor:pointer">
+      <div class="opip" style="background:${sc}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="onum">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+          <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;background:${badgeColor}22;color:${badgeColor}">${badge}</span>
+        </div>
+        <div class="ometa">${clName(cl)} · <span style="color:${SC_HEX[o.status]||'#555'}">${SL[o.status]||o.status}</span></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(parseFloat(o.total||0))}</div>
+        ${daysLeft!==null?`<div style="font-size:9px;color:${badgeColor};font-weight:700">${daysLeft<0?Math.abs(daysLeft)+'d atrasado':daysLeft===0?'Hoy':daysLeft+'d'}</div>`:''}
+      </div>
+    </div>`;
+  };
+
+  const section=(title,orders,badge,color,emptyMsg)=>{
+    if(orders.length===0)return`<div style="margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block"></span>${title}
+        <span style="font-size:10px;font-weight:600;color:var(--t3);margin-left:auto">0</span>
+      </div>
+      <div style="padding:10px 12px;background:var(--s1);border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--t3)">${emptyMsg}</div>
+    </div>`;
+    return`<div style="margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block"></span>${title}
+        <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:${color}22;color:${color};margin-left:auto">${orders.length}</span>
+      </div>
+      ${orders.map(o=>urgentCard(o,badge,color)).join('')}
+    </div>`;
+  };
+
+  $('main').innerHTML=`<div class="page" style="max-width:820px">
+    <div class="ph"><span class="ptitle">Dashboard</span>
+      <button class="btn btn-acc" onclick="openNewOrder()" style="font-size:12px;padding:6px 14px">+ Nueva orden</button>
+    </div>
+
+    <!-- KPI strip -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:22px">
+      <div class="stat" style="cursor:pointer" onclick="navigate('orders')">
+        <div class="stat-val" style="color:var(--c2)">${active.length}</div>
+        <div class="stat-key">Órdenes activas</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" style="color:var(--c1)">$${fmtS(monthTotal)}</div>
+        <div class="stat-key">Facturado este mes</div>
+      </div>
+      <div class="stat" style="${pendingPayment>0?'border-color:rgba(255,107,53,.3)':''}">
+        <div class="stat-val" style="color:${pendingPayment>0?'var(--c3)':'var(--t3)'}">$${fmtS(pendingPayment)}</div>
+        <div class="stat-key">Por cobrar</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" style="color:var(--c4)">$${fmtS(activeVal)}</div>
+        <div class="stat-key">Valor en pipeline</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:11px;font-weight:800;color:var(--t1);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">🚨 Urgente</div>
+        ${section('Vencidas',overdue,'VENCIDA','var(--red)','✓ Sin órdenes vencidas')}
+        ${section('Entregan hoy',todayDue,'HOY','var(--amber)','Sin entregas para hoy')}
+        ${section('En 3 días',soon,'PRONTO','var(--blue)','Sin entregas los próximos 3 días')}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:800;color:var(--t1);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">📋 En seguimiento</div>
+        ${section('Listas para entregar',readyToDeliver,'LISTA','var(--c2)','Sin órdenes listas')}
+        ${section('En producción',inProd,'EN PROD','#aa77ff','Sin órdenes en producción')}
+        ${section('Esta semana',thisWeek,'SEMANA','var(--t2)','Sin más entregas esta semana')}
+        ${noDate.length?section('Sin fecha de entrega',noDate,'SIN FECHA','var(--t3)',''):''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  TAX SETTINGS HELPERS
+// ════════════════════════════════════════════════════════
+function renderTaxSettings(){
+  const taxHtml=TAX_CONFIG.map((t,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s2);border:1px solid var(--border2);border-radius:6px;margin-bottom:6px">
+      <input type="checkbox" ${t.enabled?'checked':''}
+        onchange="TAX_CONFIG[${i}].enabled=this.checked;saveTaxConfig();refreshTotals();renderSettings('impuestos')"
+        style="width:15px;height:15px;cursor:pointer;accent-color:var(--acc)">
+      <input class="inp" value="${esc(t.label)}" placeholder="Nombre (ej: IVA, GST, Tax)"
+        style="flex:1;font-size:12px" maxlength="20"
+        onchange="TAX_CONFIG[${i}].label=this.value.trim();saveTaxConfig()">
+      <div style="display:flex;align-items:center;gap:4px">
+        <input class="inp" type="number" min="0" max="100" step="0.01" value="${t.rate}"
+          style="width:70px;font-size:12px;text-align:right"
+          onchange="TAX_CONFIG[${i}].rate=parseFloat(this.value)||0;saveTaxConfig();refreshTotals()">
+        <span style="font-size:12px;color:var(--t3)">%</span>
+      </div>
+      <button class="btn-icon del" title="Eliminar" onclick="TAX_CONFIG.splice(${i},1);saveTaxConfig();renderSettings('impuestos')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join('');
+
+  return`<div class="card">
+    <div class="lbl" style="margin-bottom:10px">Tipos de impuesto</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.5">
+      Configura los impuestos que aparecen en tus cotizaciones. Activa el que quieras usar. 
+      Si usas USD u otra moneda sin impuesto, pon 0% o deja desactivado.
+    </div>
+    ${taxHtml}
+    <button class="btn btn-ghost" style="font-size:12px;margin-top:4px;width:100%;justify-content:center"
+      onclick="TAX_CONFIG.push({id:'tax_'+Date.now(),label:'Impuesto',rate:0,enabled:false});saveTaxConfig();renderSettings('impuestos')">
+      + Agregar tipo de impuesto
+    </button>
+    <div style="margin-top:12px;padding:10px;background:var(--s3);border-radius:6px;font-size:11px;color:var(--t3)">
+      💡 Solo se aplica el primero que esté activado. El tipo y porcentaje aparecen en cotizaciones, impresión y WhatsApp.
+    </div>
+  </div>`;
+}
+
 // ── INIT ──
 window.addEventListener('DOMContentLoaded',()=>{
   loadBrand();
   loadUserCats();
+  loadTaxConfig();
   checkLock(); // Security: show PIN screen if configured
   connectSb();
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
