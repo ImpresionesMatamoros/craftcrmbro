@@ -861,64 +861,15 @@ function resetLockTimer(){
 // ═══════════════════════════════════════════
 // ── Credentials: loaded from localStorage if present ──
 // Defaults are the project credentials. User can override in Settings → DB.
-const SB_URL_DEFAULT='';
-const SB_KEY_DEFAULT='';
-// ── GOOGLE DRIVE CONFIG ──────────────────────────────
-let DRIVE_CFG = {
-  clientEmail: '',
-  privateKey: '',
-  rootFolderId: '',
-  enabled: false,
-};
-(function loadDriveCfg(){
-  try{
-    const d=localStorage.getItem('craftcrm_drive');
-    if(d){ const p=JSON.parse(d); DRIVE_CFG={...DRIVE_CFG,...p}; }
-    // Pre-load from bundled credentials if not yet configured
-    if(!DRIVE_CFG.clientEmail){
-      DRIVE_CFG.clientEmail='craftcrm-drive@craftcrm-494121.iam.gserviceaccount.com';
-      DRIVE_CFG.rootFolderId='1xon4PMKUDOg96OjG7uILPTx65pYZl2SX';
-      // Private key — stored once, user can rotate in Settings
-      DRIVE_CFG.privateKey='-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDPgK4VdymT15la\nBbxhiQwXeKwh3XgXI9sUOVpvKgTy8cofeQpbCoatbA3cpkGCqYYCJrB5K6k0i5rm\n+NULyG7qZdDpjlfsJgi6ObxCon2XshYNCFWuPvztrJnv0DPirWahNUP0p5tes7k2\nGoD44ylaR3HrDJ2hoZPo1MTZl+dfFvaEXUKp88wfhmYaoAKDt13Ab5txTvjenFP1\nCLpwO01fcqmR6Gt0imnx3G37RbOkLRTm50MfugltlZ8s1elleRmS3xibzM+IRLh4\n6ATIPt1NvqPr+Or0e/oeMdutWf0FfctJsae9/RD87rEWsGRuGdWFgPpgC0g2u7OY\nVLm7UrurAgMBAAECggEAVPgwEQkpROmJ2dO0dsosYeYfsoRimzMrEGaF8jRmL2e0\naVvi0jIGwTgYmwyXkd5CSlo2dH/c+2/ZYBBwCTGrvZ8ww5ruxPw0IbHnte+c90PN\nBMwvbblMUDUYGhwLSxzPhF7v81y44jg9NPr4ajJ3KglMjEAvwlKMY1DRRPsPmx9q\nv2hRMpZdbjEKQK8zJoqhmbYEXAuHVI8ce7rIlxSwRuwTU9wzMsXPubAAEBi4Wszz\nZRqwOXy/rYDIILx30AmK0CyScY+HaCFC/m7ALnNC/Uqpm4mgUV0O1PxkggxNa8HQ\n7K0Q4RGmBhkpHG1i2h2vHHEBgFurz37ig1Jtm39LKQKBgQDtQFLAH43301S2fNPS\nhPXRUo6Zo70gq7K+zp55nWDpOSyLKB8xTHFQ4C+J+XC4A38HWAvqEJbatNqWzHay\nq8U5B5p95IGqpFXFSvmmVGOwV77RlwZ5g3UJ2uMlWzbVgXj7V6JM++4PqIbkbtvK\nkGG0ekuRdc7RkZaglq3sbhS1KQKBgQDf5ogvCPMYiAUOontZROes8ftpN6bnUpBw\nHY4pISOXi8D6JoAuCYsyZojKsGb6DumayAKrmIWclSxmkRotgqwPpsow25JRFYzY\n3RHCK05TD2fX4brTcDQBPNLK6+IXm8J9KzbnWdeSXejZYU6NiV49FBQ6ZLRD530J\nGk0yGomQswKBgQCPu6BmdLd1pLp1tDpAF/00y2dI/UHfQSYRIuwvkYDcyp6Jz8zV\n+RHNhYRHeq8nTDbxJA5Tx6kc5uRm54ghxp69ZjXaf01vLBAqbrnAYu/iLcaVA4IQ\nq+uEBPAH+bLGtqGs4/KX4Sjgo6DVU7QkjEQlKtINVenuXN18fMzxp98zwQKBgQCU\nicYTHibYQXTJbrXSVUo1jBu0g/0wPbAhERp84sVQBqEx01T6Nc6o0ykw/rJydm44\nBzTuTjNl2/km2mC5jJVFlOtSWnjJXjigrpjXbg96PyAvMkvVdfyqTYWypabK7sSq\ncX7tIMdJDRArFskcUOO6NZXt311QJ0TmQxKviLd2zQKBgF3y9GDrZnVPQl4RMoF1\nq1oswjKhLjJwCy1JZSZdvWg8Hz4HpH2acKDNlN4Ut+uLetZlqPPBbd22abSRNzJt\nA8xtc7LJVRHs5b7z5WqpFaY8eayXc9UR1X42XwxbosViIVG41lY+Yw7JgQpyD/X8\nJyz7RhQxHLufZsTHnCPqrVRs\n-----END PRIVATE KEY-----\n';
-      DRIVE_CFG.enabled=true;
-      saveDriveCfg();
-    }
-  }catch(e){}
-})();
-function saveDriveCfg(){ localStorage.setItem('craftcrm_drive', JSON.stringify(DRIVE_CFG)); }
-function parseDriveJson(){
-  const raw = document.getElementById('drive-json-paste')?.value?.trim();
-  if(!raw){ toast('Pega el JSON primero'); return; }
-  try{
-    const j = JSON.parse(raw);
-    if(j.client_email){ const el=document.getElementById('drive-email'); if(el) el.value=j.client_email; }
-    if(j.private_key){ const el=document.getElementById('drive-key'); if(el) el.value=j.private_key; }
-    document.getElementById('drive-json-paste').value='';
-    toast('JSON importado — guarda para aplicar');
-  }catch(e){ toast('JSON inválido: '+e.message); }
-}
-
-function saveDriveSettings(){
-  const email = document.getElementById('drive-email')?.value?.trim();
-  const key = document.getElementById('drive-key')?.value?.trim();
-  const folder = document.getElementById('drive-folder')?.value?.trim();
-  if(!email||!key||!folder){ toast('Completa todos los campos'); return; }
-  DRIVE_CFG.clientEmail = email;
-  DRIVE_CFG.privateKey = key;
-  DRIVE_CFG.rootFolderId = folder;
-  // Reset cached token when credentials change
-  window._driveToken = null; window._driveTokenExp = 0;
-  saveDriveCfg();
-  toast('Credenciales de Drive guardadas ✓');
-}
-
+const SB_URL_DEFAULT='https://qrllwqoobqkfcqviquhz.supabase.co';
+const SB_KEY_DEFAULT='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFybGx3cW9vYnFrZmNxdmlxdWh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjcyMTQsImV4cCI6MjA5MTQ0MzIxNH0.jv9Q07hAZhaCsx4cFkr56sg-Zf8Lkm6ZwEn-Bkp7QZE';
 let SB_URL, SB_KEY;
 (function loadCreds(){
   try{
     const stored=localStorage.getItem('craftcrm_creds');
-    if(stored){const c=JSON.parse(stored);SB_URL=c.url||'';SB_KEY=c.key||'';}
-    else{SB_URL='';SB_KEY='';}
-  }catch(e){SB_URL='';SB_KEY='';}
+    if(stored){const c=JSON.parse(stored);SB_URL=c.url||SB_URL_DEFAULT;SB_KEY=c.key||SB_KEY_DEFAULT;}
+    else{SB_URL=SB_URL_DEFAULT;SB_KEY=SB_KEY_DEFAULT;}
+  }catch(e){SB_URL=SB_URL_DEFAULT;SB_KEY=SB_KEY_DEFAULT;}
 })();
 // Load MP token from sessionStorage (survives page reload within same tab)
 (function loadMPToken(){
@@ -933,7 +884,7 @@ function saveCredentials(url,key){
 }
 
 let sbConn=false, curPage='orders';
-let DATA={productos:[],clientes:[],ordenes:[],proveedores:[],orden_lineas:[]};
+let DATA={productos:[],clientes:[],ordenes:[],proveedores:[]};
 
 // ── BRANDING / THEME — 4 presets + custom ──
 const PRESET_THEMES={
@@ -1037,8 +988,8 @@ const CATS=new Proxy([],{get:(t,k)=>{const cats=getCatNames();if(k==='length')re
 const $=id=>document.getElementById(id);
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmt=n=>Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtN=n=>Number(n||0).toFixed(2); // safe for <input type="number"> — no locale commas
 const fmtS=n=>Number(n||0).toLocaleString('es-MX',{maximumFractionDigits:0});
+const clName=c=>c?(c.nombre&&c.empresa?`${c.nombre} - ${c.empresa}`:c.nombre||c.empresa||'Sin nombre'):"Sin cliente";
 const isoDate=d=>d.toISOString().slice(0,10);
 const todayISO=()=>isoDate(new Date());
 const defaultDelivery=()=>{const d=new Date();d.setDate(d.getDate()+3);return isoDate(d);};
@@ -1057,14 +1008,13 @@ async function sb(table,params='',method='GET',body=null){
 
 async function loadAll(){
   try{
-    const[p,c,o,s,ll]=await Promise.all([
+    const[p,c,o,s]=await Promise.all([
       sb('productos','select=*&order=nombre'),
       sb('clientes','select=*&order=nombre'),
       sb('ordenes','select=*&order=created_at.desc'),
       sb('proveedores','select=*&order=nombre'),
-      sb('orden_lineas','select=orden_id,producto_nombre&order=created_at').catch(()=>[]),
     ]);
-    DATA.productos=p||[];DATA.clientes=c||[];DATA.ordenes=o||[];DATA.proveedores=s||[];DATA.orden_lineas=ll||[];
+    DATA.productos=p||[];DATA.clientes=c||[];DATA.ordenes=o||[];DATA.proveedores=s||[];
     sbConn=true;$('conn-dot').classList.add('ok');$('conn-dot').title='Conectado';
   }catch(e){sbConn=false;$('conn-dot').classList.remove('ok');}
 }
@@ -1120,11 +1070,10 @@ const SC_HEX={cotizacion:'#4d94ff',confirmada:'#ff6b35',en_produccion:'#aa77ff',
 
 function renderOrders(q='',filter='all'){
   const now=new Date();
-  const allOrdenes=DATA.ordenes.filter(o=>!isDeleted(o));
-  const active=allOrdenes.filter(o=>!['entregada','cancelada'].includes(o.status));
+  const active=DATA.ordenes.filter(o=>!['entregada','cancelada'].includes(o.status));
   const monthTotal=DATA.ordenes.filter(o=>{const d=new Date(o.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,o)=>s+(parseFloat(o.total)||0),0);
   let list=DATA.ordenes;
-  if(q)list=allOrdenes.filter(o=>{const cl=DATA.clientes.find(c=>c.id===o.cliente_id);return(o.numero||'').toLowerCase().includes(q.toLowerCase())||(cl?.nombre||'').toLowerCase().includes(q.toLowerCase());});
+  if(q)list=list.filter(o=>{const cl=DATA.clientes.find(c=>c.id===o.cliente_id);return(o.numero||'').toLowerCase().includes(q.toLowerCase())||(cl?.nombre||'').toLowerCase().includes(q.toLowerCase());});
   if(filter==='active')list=list.filter(o=>!['entregada','cancelada'].includes(o.status));
   else if(filter==='today'){const ts=now.toISOString().slice(0,10);list=list.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===ts);}
   else if(filter==='week'){const ts=now.toISOString().slice(0,10);const we=new Date(now);we.setDate(we.getDate()+7);const ws=we.toISOString().slice(0,10);list=list.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>=ts&&o.fecha_entrega.slice(0,10)<=ws);}
@@ -1156,7 +1105,7 @@ function renderOrders(q='',filter='all'){
             <div class="lp-item-dot" style="background:${sc}"></div>
             <div class="lp-item-body">
               <div class="lp-item-num">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-              <div class="lp-item-name">${cl?esc(cl.nombre):'Sin cliente'}</div>
+              <div class="lp-item-name">${clName(cl)}</div>
               <div class="lp-item-meta">${o.fecha_entrega?fmtDateES(o.fecha_entrega)+' · ':''}${esc(SL[o.status]||o.status)}</div>
             </div>
             <div class="lp-item-amt">$${fmtS(parseFloat(o.total||0))}</div>
@@ -1212,7 +1161,7 @@ function renderOrders(q='',filter='all'){
         <div class="opip" style="background:${sc}"></div>
         <div style="flex:1;min-width:0">
           <div class="onum">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-          <div class="ometa">${cl?esc(cl.nombre):'Sin cliente'}${o.fecha_entrega?' · Entrega '+fmtDateES(o.fecha_entrega):''}</div>
+          <div class="ometa">${clName(cl)}${o.fecha_entrega?' · Entrega '+fmtDateES(o.fecha_entrega):''}</div>
         </div>
         ${pct>0&&pct<100?`<span style="font-size:10px;color:var(--amber);font-weight:700">%${pct}</span>`:''}
         ${pct>=100?`<span style="font-size:10px;color:var(--green);font-weight:700">✓</span>`:''}
@@ -1251,7 +1200,7 @@ function buildClientDP(cl,ordId){
       <div class="dp-section">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div class="dp-avatar">${initials}</div>
-          <div><div style="font-size:13px;font-weight:700">${esc(cl.nombre)}</div>
+          <div><div style="font-size:13px;font-weight:700">${clName(cl)}</div>
           ${cl.empresa?`<div style="font-size:11px;color:var(--t3)">${esc(cl.empresa)}</div>`:''}</div>
         </div>
         ${cl.telefono?`<div class="dp-row"><div class="dp-label">Tel</div><div class="dp-value"><a href="tel:${esc(cl.telefono)}" style="color:var(--acc);text-decoration:none">${esc(cl.telefono)}</a></div></div>`:''}
@@ -1313,14 +1262,12 @@ let _payOpen=false;
 let _calMonth=new Date().getMonth(), _calYear=new Date().getFullYear();
 
 function openNewOrder(){
-  window._savingOrder=false; // reset guard
   OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',
     fecha_entrega:defaultDelivery(),notas:'',moneda:'MXN',descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
   renderOrderForm();
 }
 
 async function openEditOrder(id){
-  window._savingOrder=false; // reset guard
   const ord=DATA.ordenes.find(o=>o.id===id);if(!ord)return;
   const cl=DATA.clientes.find(c=>c.id===ord.cliente_id);
   let lines=[],pagos=[];
@@ -1408,7 +1355,17 @@ function renderOrderForm(){
   <!-- PAYMENTS -->
   <div class="pay-panel" id="pay-panel">${buildPayHTML(tot.total)}</div>
 
-   <!-- ACTIONS -->
+  <!-- IMAGENES DE ORDEN -->
+  <div id="ord-imgs-strip" style="margin-top:8px">
+    ${(OF.imagenes&&OF.imagenes.length)?`<div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px">
+      ${OF.imagenes.map(img=>`<img src="${img.url}" style="height:56px;width:56px;object-fit:cover;border-radius:5px;border:1px solid var(--border);flex-shrink:0;cursor:pointer" onclick="showOrderImagesModal()" onerror="this.style.display='none'" title="${esc(img.caption||'')}">`).join('')}
+      <div style="width:56px;height:56px;border:1.5px dashed var(--border2);border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);font-size:20px;flex-shrink:0" onclick="showOrderImagesModal()">+</div>
+    </div>`:`<button class="btn btn-ghost" onclick="showOrderImagesModal()" style="font-size:11px;margin-bottom:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Agregar fotos a la orden
+    </button>`}
+  </div>
+  <!-- ACTIONS -->
   <div style="display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap">
     <button class="btn btn-acc" onclick="saveOrder()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -1420,9 +1377,6 @@ function renderOrderForm(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
         Duplicar
       </button>` : ''}
-    <button class="btn btn-ghost" onclick="${DRIVE_CFG.enabled?'showDriveModal()':"toast('Activa Google Drive en Ajustes → Base de datos')"}" title="Archivos del proyecto en Drive" style="${DRIVE_CFG.enabled?'color:#4285f4;border-color:rgba(66,133,244,.35)':''}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-      Archivos</button>
     <button class="btn btn-ghost" onclick="printOrder()" title="Imprimir cotización">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       Imprimir
@@ -1432,7 +1386,7 @@ function renderOrderForm(){
       WhatsApp
     </button>
     ${BRAND.mpToken?`<button class="mp-btn" onclick="generateMPLink(calcTotals().total)" style="font-size:12px;padding:7px 12px">💳 Link MP</button>`:''}
-    ${isEdit ? `<button class="btn btn-ghost" style="margin-left:auto;color:var(--amber);border-color:rgba(255,183,0,0.3)" onclick="softDelOrder('${OF.id}')">🗄 Archivar</button>` : ''}
+    ${isEdit ? `<button class="btn btn-ghost" style="margin-left:auto;color:var(--red);border-color:rgba(255,69,69,0.25)" onclick="delOrder('${OF.id}')">Eliminar</button>` : ''}
   </div>
 </div>`;
 
@@ -1506,7 +1460,6 @@ function selectClient(id,nombre){
 function createClientInline(nombre){$('client-drop')?.classList.remove('open');if(!nombre?.trim())return;showClientModal(nombre.trim());}
 
 function showNewProdModal(nombre){
-  window._creatingProdLine = false; // reset guard
   closeModal();
   const catOpts=USER_CATS.length?USER_CATS.map(c=>`<option value="${c.name}">${c.name}</option>`).join(''):'<option value="general">general</option>';
   const o=document.createElement('div');o.className='modal-overlay';o.id='cmodal';
@@ -1522,21 +1475,13 @@ function showNewProdModal(nombre){
     <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.5">Puedes dejar precio en 0 y ajustarlo en la línea de la orden o en Productos.</div>
     <input type="hidden" id="np-nombre" value="${esc(nombre)}">
     <div style="display:flex;gap:8px">
-      <button class="btn btn-acc" id="np-create-btn" style="flex:1;justify-content:center" onclick="_doCreateProdLine($('np-nombre').value,$('np-cat').value,$('np-price').value)">Crear y agregar</button>
+      <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="_doCreateProdLine($('np-nombre').value,$('np-cat').value,$('np-price').value)">Crear y agregar</button>
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
     </div>
   </div>`;
   o.onclick=e=>{if(e.target===o)closeModal();};
   document.body.appendChild(o);
-  setTimeout(()=>{
-    const p=$('np-price');
-    if(p){
-      p.focus();
-      p.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();_doCreateProdLine($('np-nombre').value,$('np-cat').value,p.value);}});
-    }
-    const c=$('np-cat');
-    if(c) c.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();p?.focus();}});
-  },60);
+  setTimeout(()=>$('np-price')?.focus(),60);
 }
 
 function showClientModal(nombre){
@@ -1688,10 +1633,6 @@ const LINE_STRATEGIES = {
         _notesOpen: false,
       };
     },
-    calcSubtotal(l) {
-      if(l.precio_manual !== null) return parseFloat(l.precio_manual)||0;
-      return (parseFloat(l.qty)||1) * (parseFloat(l.price)||0);
-    },
     // Render the input fields for this strategy inside a line card
     renderFields(l, i) {
       return `
@@ -1766,7 +1707,7 @@ const LINE_STRATEGIES = {
         </div>
         <div class="lf-group" style="min-width:68px;max-width:80px">
           <div class="lf-label" style="color:var(--c2)">= Área</div>
-          <div class="lf-inp" id="area-display-${i}" style="background:var(--s2);color:var(--c2);font-weight:700;font-size:11px">${area}${l.unidad_dim}²</div>
+          <div class="lf-inp" style="background:var(--s2);color:var(--c2);font-weight:700;font-size:11px">${area}${l.unidad_dim}²</div>
         </div>`;
     },
   },
@@ -1898,10 +1839,7 @@ function LINE_FACTORY(prod) {
   const strategy = LINE_STRATEGIES[stratKey];
   // Inject category config into prod for create()
   const enrichedProd = { ...prod, _catCfg: cat?.config || {} };
-  const line = strategy.create(enrichedProd);
-  // Compute initial subtotal so the line shows the right price immediately
-  if(strategy.calcSubtotal) line.subtotal = strategy.calcSubtotal(line);
-  return line;
+  return strategy.create(enrichedProd);
 }
 
 // ── LF — Line Field mutation controller ───────────────────────
@@ -1914,21 +1852,12 @@ const LF = {
     line[key] = val;
     const strategy = LINE_STRATEGIES[line.multiplier] || LINE_STRATEGIES.standard;
     line.subtotal = strategy.calcSubtotal ? strategy.calcSubtotal(line) : (line.qty||1)*(line.price||0);
-    // Full re-render only when unit label changes — NOT on every dimensional field change
-    // (re-rendering destroys the focused input and resets its displayed value)
-    const needsFullRender = ['unidad_dim','unidad_medida'].includes(key);
+    // Full re-render needed when unit changes (labels update) or for dimensional (area display)
+    const needsFullRender = ['unidad_dim','unidad_medida'].includes(key) || line.multiplier==='dimensional';
     if(needsFullRender){
       renderLinesList();
     } else {
       LF._refreshLineSubtotal(i);
-      // For dimensional: also update the area display without re-rendering
-      if(line.multiplier==='dimensional'){
-        const areaEl = document.getElementById('area-display-'+i);
-        if(areaEl){
-          const area=((parseFloat(line.ancho)||0)*(parseFloat(line.alto)||0));
-          areaEl.textContent = area.toFixed(2)+' '+( line.unidad_dim||'m')+'²';
-        }
-      }
     }
     const tot = calcTotals();
     const tp = $('totals-panel');
@@ -2007,7 +1936,7 @@ const LF = {
     if(!line) return;
     const el = document.getElementById('lsub-'+i);
     if (el && document.activeElement !== el) {
-      el.value = fmtN(line.precio_manual !== null ? line.precio_manual : line.subtotal);
+      el.value = fmt(line.precio_manual !== null ? line.precio_manual : line.subtotal);
       el.style.color = line.precio_manual !== null ? 'var(--amber)' : 'var(--t1)';
     }
   },
@@ -2055,10 +1984,9 @@ function buildLine(l, i) {
     </div>` : '';
 
   // Image
-  // img_url kept for backward compat — files now managed via Drive
   const imgHtml = l.img_url
-    ? `<img class="line-img" src="${l.img_url}" alt="img" onerror="this.style.display='none'">`
-    : '';
+    ? `<img class="line-img" src="${l.img_url}" onclick="showLineImageModal(${i})" alt="img" onerror="this.style.display='none'">`
+    : `<div class="line-img-placeholder" onclick="showLineImageModal(${i})" title="Agregar imagen">📷</div>`;
 
   return `<div class="line-card" id="lc-${i}">
     <div class="line-card-top">
@@ -2082,7 +2010,7 @@ function buildLine(l, i) {
         </div>
         <input class="lf-inp lf-subtotal" type="number" min="0" step="any"
           id="lsub-${i}"
-          value="${fmtN(l.precio_manual !== null ? l.precio_manual : l.subtotal)}"
+          value="${fmt(l.precio_manual !== null ? l.precio_manual : l.subtotal)}"
           placeholder="0.00"
           title="Edita para ajuste manual. Borra para volver automático."
           style="color:${l.precio_manual!==null?'var(--amber)':'var(--t1)'};font-weight:600"
@@ -2158,17 +2086,7 @@ function showLineImageModal(i){
   setTimeout(()=>$('li-url')?.focus(),60);
 }
 function applyLineImage(i,url){const line=OF.lines[i];if(!line)return;line.img_url=url||'';closeModal();const el=document.getElementById('lc-'+i);if(el)el.outerHTML=buildLine(line,i);}
-function loadLineImageFile(i,input){
-  const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const dataUrl=e.target.result;
-    const u=$('li-url');if(u)u.value=dataUrl;
-    // Auto-apply so thumbnail shows immediately
-    applyLineImage(i,dataUrl);
-  };
-  reader.readAsDataURL(file);
-}
+function loadLineImageFile(i,input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{const u=$('li-url');if(u)u.value=e.target.result;};reader.readAsDataURL(file);}
 
 function remLine(i) {
   OF.lines.splice(i, 1);
@@ -2285,33 +2203,24 @@ async function createProdLine(nombre) {
 }
 
 async function _doCreateProdLine(nombre, categoria, precio) {
-  if(window._creatingProdLine) return;
-  window._creatingProdLine = true;
-  // Disable the create button immediately
-  const btn = document.querySelector('#cmodal .btn-acc');
-  if(btn){ btn.disabled = true; btn.textContent = 'Creando...'; }
   const cat = USER_CATS[0]?.name || 'general';
   const defCat = categoria || cat;
   try {
     const res = await sb('productos', '', 'POST', {
       nombre: nombre.trim(), tipo_precio: 'fijo',
       precio_base: parseFloat(precio)||0, categoria: defCat,
-      produccion: 'inhouse',
+      produccion: 'inhouse', moneda: 'MXN',
     });
     const np = res[0];
     DATA.productos.push(np);
     DATA.productos.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-    closeModal();
     addLine(np);
-    toast(`"${np.nombre}" creado y agregado ✓`);
+    toast(`"${esc(np.nombre)}" creado — asigna precio y categoría`);
   } catch (e) {
-    // Fallback: add as line without saving to DB (no connection / schema issue)
-    const fakeProd = { id: null, nombre: nombre.trim(), categoria: defCat, precio_base: parseFloat(precio)||0 };
-    closeModal();
+    // Fallback: add as unsaved line with standard strategy
+    const fakeProd = { id: null, nombre: nombre.trim(), categoria: defCat, precio_base: 0 };
     addLine(fakeProd);
-    toast(`"${nombre}" agregado a la orden (sin guardar en productos)`);
-  } finally {
-    window._creatingProdLine = false;
+    toast(`"${nombre}" agregado a la orden`);
   }
 }
 
@@ -2350,10 +2259,10 @@ function refreshTotals(){
       l.subtotal=strat.calcSubtotal(l);
     }
     // Update the inline subtotal span without re-rendering the whole line
-    const lsubEl=document.getElementById('lsub-'+OF.lines.indexOf(l));
-    if(lsubEl && document.activeElement!==lsubEl){
-      lsubEl.value=fmtN(l.precio_manual!==null?l.precio_manual:l.subtotal);
-      lsubEl.style.color=l.precio_manual!==null?'var(--amber)':'var(--t1)';
+    const span=document.getElementById('lsub-'+OF.lines.indexOf(l));
+    if(span){
+      span.textContent='$'+fmt(l.subtotal);
+      span.style.color=l.precio_manual!==null?'var(--amber)':'var(--t2)';
     }
   });
   const tot=calcTotals();
@@ -2531,10 +2440,6 @@ function markPaid(metodo){const tot=calcTotals();const paid=OF.pagos.reduce((s,p
 // ── SAVE ORDER ──
 // Tries progressively stripped payloads to handle DB schemas that may lack iva/pagado columns
 async function saveOrder(){
-  // Guard against double-submit
-  if(window._savingOrder)return;
-  window._savingOrder=true;
-  document.querySelectorAll('[onclick*="saveOrder"]').forEach(b=>{b.disabled=true;b.textContent='Guardando...';});
   const tot=calcTotals();
   const paid=OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
   const imgJson = (OF.imagenes||[]).length ? JSON.stringify(OF.imagenes) : undefined;
@@ -2546,12 +2451,11 @@ async function saveOrder(){
   };
   const attempts=[
     {...base,iva:OF.iva,pagado:paid,imagenes_json:imgJson},  // full
-    {...base,iva:OF.iva,pagado:paid},                        // no imagenes_json
-    {...base,iva:OF.iva},                                    // no pagado col
-    {...base,pagado:paid},                                   // no iva col (fallback if col missing)
+    {...base,iva:OF.iva,pagado:paid},                        // no imagenes
+    {...base,iva:OF.iva},                                    // no pagado
+    {...base,pagado:paid},                                   // no iva
     {...base},                                               // bare minimum
   ];
-  const _releaseOrderBtn=()=>{window._savingOrder=false;document.querySelectorAll('[onclick*="saveOrder"]').forEach(b=>{b.disabled=false;b.textContent='Guardar';});};
   const run=async payload=>{
     if(OF.id){await sb('ordenes',`id=eq.${OF.id}`,'PATCH',payload);return OF.id;}
     else{const res=await sb('ordenes','','POST',payload);return res[0].id;}
@@ -2561,20 +2465,14 @@ async function saveOrder(){
       const oid=await run(payload);
       await saveOrderLines(oid);
       await loadAll();toast('Guardado ✓');
-      _releaseOrderBtn();
       if(isDesktop()){const sid=OF.id;renderOrders();if(sid)setTimeout(()=>openOrderDesktop(sid),80);}
       else renderOrders();return;
     }catch(e){
-      // Network error (fail to fetch) → stop immediately, don't retry
-      if(e.message.toLowerCase().includes('fetch')||e.message.toLowerCase().includes('network')){
-        _releaseOrderBtn();toast('Sin conexión — verifica tu internet e intenta de nuevo');return;
-      }
-      // 400 = schema mismatch → try next stripped payload
-      if(!e.message.includes('400')){_releaseOrderBtn();toast('Error: '+e.message);return;}
+      if(!e.message.includes('400')){{toast('Error: '+e.message);return;}}
+      // 400 = schema mismatch, try next stripped payload
     }
   }
-  toast('Error: no se pudo guardar — verifica el esquema de la BD');
-  _releaseOrderBtn();
+  toast('Error: no se pudo guardar — verifica el esquema de la DB');
 }
 
 async function saveOrderLines(oid) {
@@ -2687,7 +2585,7 @@ function renderKanban() {
           <div class="kanban-card-num">${esc(o.numero || o.id.slice(0,8).toUpperCase())}</div>
           <div style="font-size:9px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t2)">$${fmtS(total)}</div>
         </div>
-        <div class="kanban-card-client">${cl ? esc(cl.nombre) : 'Sin cliente'}</div>
+        <div class="kanban-card-client">${clName(cl)}</div>
         ${o.notas?`<div style="font-size:10px;color:var(--t3);margin-top:2px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.notas)}</div>`:''}
         <div style="margin-top:5px;font-size:10px;color:var(--t3);line-height:1.4" id="klines-${o.id}">
           <span style="color:var(--t3);font-style:italic">Cargando...</span>
@@ -2842,7 +2740,7 @@ function printOrder() {
   </div>
   ${cl?`<div class="to-block">
     <div class="to-label">Cliente</div>
-    <div class="to-name">${esc(cl.nombre)}</div>
+    <div class="to-name">${clName(cl)}</div>
     ${cl.empresa?`<div class="to-detail">${esc(cl.empresa)}</div>`:''}
     ${cl.telefono?`<div class="to-detail">${esc(cl.telefono)}</div>`:''}
     ${cl.email?`<div class="to-detail">${esc(cl.email)}</div>`:''}
@@ -3005,7 +2903,7 @@ function renderDayView(dateStr){
           return`<div class="order-row" onclick="openEditOrder('${o.id}')" style="border-left:3px solid ${sc}">
             <div style="flex:1;min-width:0">
               <div class="onum">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-              <div class="ometa">${cl?esc(cl.nombre):'Sin cliente'} · ${esc(o.notas||'')}</div>
+              <div class="ometa">${clName(cl)} · ${esc(o.notas||'')}</div>
             </div>
             <div style="text-align:right;flex-shrink:0">
               <div style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(total)}</div>
@@ -3048,18 +2946,14 @@ function buildMonthGrid(){
       ${ords.slice(0,3).map(o=>{
         const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
         const sc=SC_HEX[o.status]||'#555';
-        const lineNames=DATA.orden_lineas?DATA.orden_lineas.filter(ln=>ln.orden_id===o.id).slice(0,2).map(ln=>ln.producto_nombre||'').filter(Boolean):[];
-        const calLabel=cl?esc(cl.nombre.split(' ').slice(0,2).join(' ')):esc((o.numero||'').replace('ORD-','#'));
-        const calSub=lineNames.length?lineNames.map(esc).join(', '):'';
         return`<div class="cal-card" style="background:${sc}20;color:${sc};border-left:2px solid ${sc}"
           draggable="true"
           ondragstart="onCalDragStart(event,'${o.id}')"
           ondragend="onCalDragEnd(event)"
           onclick="event.stopPropagation();openEditOrder('${o.id}')"
           ondblclick="event.stopPropagation();openEditOrder('${o.id}')"
-          title="${esc(o.numero||'')}${cl?' — '+esc(cl.nombre):''}${calSub?' | '+calSub:''}">
-          <div style="font-weight:700;font-size:10px;line-height:1.2">${calLabel}</div>
-          ${calSub?`<div style="font-size:9px;opacity:.8;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${calSub}</div>`:''}
+          title="${esc(o.numero||'')}${cl?' — '+clName(cl):''}">
+          ${esc((o.numero||o.id.slice(0,6)).replace('ORD-','#'))} ${cl?esc(cl.nombre.split(' ')[0]):''}
         </div>`;
       }).join('')}
       ${ords.length>3?`<div style="font-size:9px;color:var(--t3);padding:1px 4px">+${ords.length-3} más</div>`:''}
@@ -3080,8 +2974,7 @@ async function onCalDrop(e,dateStr){
 //  PRODUCTS
 // ══════════════════════════════════════
 function renderProducts(q=''){
-  const allProds=DATA.productos.filter(p=>!isDeleted(p));
-  const list=q?allProds.filter(p=>(p.nombre||'').toLowerCase().includes(q.toLowerCase())):allProds;
+  const list=q?DATA.productos.filter(p=>(p.nombre||'').toLowerCase().includes(q.toLowerCase())):DATA.productos;
   if(isDesktop()){
     lpShow(`<div class="lp-head">
         <div class="lp-title">Productos
@@ -3094,11 +2987,11 @@ function renderProducts(q=''){
       </div>
       <div class="lp-body">
         ${list.length===0?`<div style="padding:20px;text-align:center;color:var(--t3);font-size:11px">Sin productos</div>`
-        :list.map(p=>{const cat=USER_CATS.find(c=>c.name===p.categoria);const cc=cat?.color||'var(--border2)';const isPend=p.notas&&p.notas.startsWith('[PENDIENTE]');
+        :list.map(p=>{const cat=USER_CATS.find(c=>c.name===p.categoria);const cc=cat?.color||'var(--border2)';
           return`<div class="lp-item" onclick="editProduct('${p.id}')">
-            <div style="width:7px;height:7px;border-radius:50%;background:${isPend?'var(--amber)':cc};flex-shrink:0"></div>
+            <div style="width:7px;height:7px;border-radius:50%;background:${cc};flex-shrink:0"></div>
             <div class="lp-item-body">
-              <div class="lp-item-name">${esc(p.nombre)}${isPend?'<span style="font-size:9px;font-weight:800;color:var(--amber);margin-left:5px">⏳</span>':''}</div>
+              <div class="lp-item-name">${esc(p.nombre)}</div>
               <div class="lp-item-meta">${esc(p.categoria||'sin categoría')}</div>
             </div>
             ${p.precio_base?`<div class="lp-item-amt">$${fmtS(p.precio_base)}</div>`:''}
@@ -3109,25 +3002,24 @@ function renderProducts(q=''){
   $('main').innerHTML=`<div class="page">
     <div class="ph"><span class="ptitle">Productos</span>
       <div style="display:flex;gap:6px">
-        <button class="btn btn-ghost" onclick="quickCapture()" style="font-size:11px">⚡ Rápido</button>
+        ${DATA.productos.length===0?`<button class="btn btn-ghost" onclick="seedData()" style="font-size:11px">Cargar ejemplos</button>`:''}
         <button class="btn btn-acc" onclick="editProduct()">+ Nuevo</button>
       </div>
     </div>
     <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input class="inp" placeholder="Buscar..." oninput="renderProducts(this.value)" value="${esc(q)}">
     </div>
-    ${list.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">Sin productos — agrega uno con <strong>+ Nuevo</strong> o usa <strong>⚡ Rápido</strong> para captura rápida</div>`
+    ${list.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">Sin productos — <button class="btn btn-ghost" onclick="seedData()" style="display:inline-flex;font-size:11px">Cargar ejemplos de imprenta</button></div>`
     :list.map(p=>{
       const cat=USER_CATS.find(c=>c.name===p.categoria);
       const catColor=cat?.color||'var(--border2)';
       const incIcon={regular:'×',tiers:'≡',dimensional:'⊡',weight:'⚖',volume:'⚖',time:'⏱'}[cat?.incrementType||'regular']||'×';
-      const isPending=p.notas&&p.notas.startsWith('[PENDIENTE]');
-      return`<div class="list-row" onclick="editProduct('${p.id}')" style="border-left:3px solid ${isPending?'var(--amber)':catColor}">
-        <div style="width:28px;height:28px;border-radius:6px;background:${isPending?'rgba(255,183,0,.15)':catColor+'20'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:${isPending?'var(--amber)':catColor}">${isPending?'⏳':incIcon}</div>
+      return`<div class="list-row" onclick="editProduct('${p.id}')" style="border-left:3px solid ${catColor}">
+        <div style="width:28px;height:28px;border-radius:6px;background:${catColor}20;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:${catColor}">${incIcon}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">${esc(p.nombre)}${isPending?'<span style="font-size:9px;font-weight:800;color:var(--amber);background:rgba(255,183,0,.15);padding:1px 5px;border-radius:3px;letter-spacing:.05em">PENDIENTE</span>':''}</div>
+          <div style="font-size:13px;font-weight:600">${esc(p.nombre)}</div>
           <div style="font-size:11px;color:var(--t3)">
-            <span style="color:${isPending?'var(--amber)':catColor};font-weight:600">${esc(p.categoria||'sin categoría')}</span>
+            <span style="color:${catColor};font-weight:600">${esc(p.categoria||'sin categoría')}</span>
             ${p.produccion?' · '+esc(p.produccion):''}
           </div>
         </div>
@@ -3139,11 +3031,9 @@ function renderProducts(q=''){
 
 let _pF={},_pMats=[];
 async function editProduct(id){
-  window._savingProd=false; // reset guard when opening form
   const p=id?DATA.productos.find(x=>x.id===id):null;
   const defCat=USER_CATS.length>0?USER_CATS[0].name:'general';
-  const rawNotas=p?.notas||'';const cleanNotas=rawNotas.startsWith('[PENDIENTE]')?rawNotas.replace('[PENDIENTE]','').replace(/^ ?Proveedor: [^—]+ — ?/,'').replace(/^ ?Proveedor: .+$/,'').trim():rawNotas;
-  _pF={tipo_precio:p?.tipo_precio||'fijo',nombre:p?.nombre||'',categoria:p?.categoria||defCat,produccion:p?.produccion||'inhouse',precio_base:p?.precio_base||0,stock:p?.stock||0,notas:cleanNotas};
+  _pF={tipo_precio:p?.tipo_precio||'fijo',nombre:p?.nombre||'',categoria:p?.categoria||defCat,produccion:p?.produccion||'inhouse',precio_base:p?.precio_base||0,stock:p?.stock||0,notas:p?.notas||''};
   _pMats=JSON.parse(JSON.stringify(p?.materiales_json||[]));
   renderProductForm(p);
 }
@@ -3157,11 +3047,9 @@ function renderProductForm(p){
   const selCat=USER_CATS.find(c=>c.name===curCat);
   const incType=selCat?.incrementType||'regular';
   const incHint={regular:'Cantidad libre (1, 2, 3...)',tiers:'Selección por tier de cantidad',dimensional:'Precio por área (ancho × alto)',weight:'Precio por peso',volume:'Precio por volumen',time:'Precio por tiempo'}[incType]||'';
-  const isPendingEdit=isEdit&&p?.notas&&p.notas.startsWith('[PENDIENTE]');
   $('main').innerHTML=`<div class="page page-sm">
     <button class="back-btn" onclick="renderProducts()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Productos</button>
     <div class="ph"><span class="ptitle">${isEdit?esc(p.nombre):'Nuevo producto'}</span></div>
-    ${isPendingEdit?`<div style="background:rgba(255,183,0,.1);border:1px solid rgba(255,183,0,.35);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px"><span style="font-size:16px">⏳</span><div><strong>Captura pendiente</strong> — completa los campos que faltan y guarda para marcar como completo.</div></div>`:''}
     <div class="card">
       <div class="fld"><div class="lbl">Nombre</div><input class="inp" id="pf-n" value="${esc(_pF.nombre)}" placeholder="Nombre del producto"></div>
       <div class="g2">
@@ -3203,112 +3091,14 @@ function renderProductForm(p){
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-acc" onclick="saveProd('${p?.id||''}')">Guardar</button>
       <button class="btn btn-ghost" onclick="renderProducts()">Cancelar</button>
-      ${isEdit?`<button class="btn btn-ghost" style="margin-left:auto;color:var(--amber);border-color:rgba(255,183,0,0.3)" onclick="softDelProd('${p.id}')">🗄 Archivar</button>`:''}
+      ${isEdit?`<button class="btn btn-ghost" style="margin-left:auto;color:var(--red);border-color:rgba(255,69,69,0.25)" onclick="delProd('${p.id}')">Eliminar</button>`:''}
     </div>
   </div>`;
 }
 function matRow(i){const m=_pMats[i];return`<div style="display:grid;grid-template-columns:1fr 80px 80px 22px;gap:6px;margin-bottom:6px"><input class="inp" style="font-size:12px" placeholder="Material" value="${esc(m.nombre||'')}" onchange="_pMats[${i}].nombre=this.value"><input class="inp" style="font-size:12px" type="number" placeholder="Costo" value="${m.costo_unitario||0}" onchange="_pMats[${i}].costo_unitario=parseFloat(this.value)||0"><input class="inp" style="font-size:12px" type="number" placeholder="Cant." value="${m.cantidad_necesaria||1}" onchange="_pMats[${i}].cantidad_necesaria=parseFloat(this.value)||1"><button class="btn-icon del" onclick="_pMats.splice(${i},1);$('mat-list').innerHTML=_pMats.length?_pMats.map((_,j)=>matRow(j)).join(''):'<div style=font-size:12px;color:var(--t3)>Sin materiales</div>'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;}
 function addMat(){_pMats.push({nombre:'',costo_unitario:0,cantidad_necesaria:1});$('mat-list').innerHTML=_pMats.map((_,i)=>matRow(i)).join('');}
-async function saveProd(id){
-  if(window._savingProd)return; window._savingProd=true;
-  // Capture button reference before DOM might change
-  const btns=[...document.querySelectorAll('[onclick*="saveProd"]')];
-  btns.forEach(b=>{b.disabled=true;b.textContent='Guardando...';});
-  const _release=()=>{window._savingProd=false;btns.forEach(b=>{b.disabled=false;b.textContent='Guardar';});};
-  const rawPfNotas=$('pf-notes')?.value||'';const notas=(rawPfNotas.startsWith('[PENDIENTE]')?rawPfNotas.slice(rawPfNotas.indexOf(']')+1):rawPfNotas).trim();
-  const d={nombre:$('pf-n').value,categoria:$('pf-cat').value,produccion:$('pf-prod').value,
-    tipo_precio:_pF.tipo_precio||'fijo',precio_base:parseFloat($('pf-price').value)||0,
-    stock:parseInt($('pf-stock').value)||0,notas,materiales_json:_pMats};
-  try{
-    if(id)await sb('productos',`id=eq.${id}`,'PATCH',d);
-    else await sb('productos','','POST',d);
-    await loadAll();toast('Guardado ✓');_release();renderProducts();
-  }catch(e){
-    _release();
-    if(e.message.toLowerCase().includes('fetch')||e.message.toLowerCase().includes('network'))
-      toast('Sin conexión — verifica tu internet e intenta de nuevo');
-    else toast('Error al guardar: '+e.message);
-  }
-}
+async function saveProd(id){const d={nombre:$('pf-n').value,categoria:$('pf-cat').value,produccion:$('pf-prod').value,tipo_precio:_pF.tipo_precio||'fijo',precio_base:parseFloat($('pf-price').value)||0,stock:parseInt($('pf-stock').value)||0,notas:$('pf-notes')?.value||'',materiales_json:_pMats};try{if(id)await sb('productos',`id=eq.${id}`,'PATCH',d);else await sb('productos','','POST',d);await loadAll();toast('Guardado ✓');renderProducts();}catch(e){toast('Error: '+e.message);}}
 async function delProd(id){if(!confirm('¿Eliminar?'))return;try{await sb('productos',`id=eq.${id}`,'DELETE');await loadAll();renderProducts();}catch(e){}}
-
-// ════════════════════════════════════════════════════════
-//  CAPTURA RÁPIDA DE PRODUCTO
-// ════════════════════════════════════════════════════════
-function quickCapture(){
-  const catList=USER_CATS.length>0?USER_CATS.map(c=>c.name):['general'];
-  const catOpts=catList.map(c=>`<option value="${c}">${c}</option>`).join('');
-  const provOpts=DATA.proveedores.map(p=>`<option value="${p.nombre}">${p.nombre}</option>`).join('');
-  const overlay=document.createElement('div');
-  overlay.id='qc-overlay';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px';
-  overlay.innerHTML=`
-    <div style="background:var(--s1);border:1px solid var(--border2);border-radius:12px;width:100%;max-width:420px;padding:0;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;font-weight:700">⚡ Captura rápida</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px">Registra el producto ahora, completa detalles después</div>
-        </div>
-        <button onclick="document.getElementById('qc-overlay').remove()" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:18px;line-height:1;padding:4px">✕</button>
-      </div>
-      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px">
-        <div class="fld" style="margin:0">
-          <div class="lbl">Nombre del producto <span style="color:var(--red)">*</span></div>
-          <input class="inp" id="qc-nombre" placeholder="Ej: Lona 13oz impresa" autofocus style="font-size:14px">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="fld" style="margin:0">
-            <div class="lbl">Precio base</div>
-            <input class="inp" id="qc-precio" type="number" min="0" step="any" placeholder="0.00">
-          </div>
-          <div class="fld" style="margin:0">
-            <div class="lbl">Categoría</div>
-            <select class="inp" id="qc-cat">${catOpts}${catList.length===0?'<option value="general">general</option>':''}</select>
-          </div>
-        </div>
-        ${DATA.proveedores.length>0?`
-        <div class="fld" style="margin:0">
-          <div class="lbl">Proveedor (opcional)</div>
-          <select class="inp" id="qc-prov">
-            <option value="">— Sin asignar —</option>
-            ${provOpts}
-          </select>
-        </div>`:''}
-        <div class="fld" style="margin:0">
-          <div class="lbl">Notas rápidas</div>
-          <input class="inp" id="qc-notas" placeholder="Medidas, colores, especificaciones...">
-        </div>
-        <div style="background:var(--amber-dim,rgba(255,183,0,.08));border:1px solid rgba(255,183,0,.25);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--t2);line-height:1.5">
-          💡 Este producto quedará marcado como <strong style="color:var(--amber)">PENDIENTE</strong> — podrás completar materiales, tiers, stock y más cuando tengas la info.
-        </div>
-      </div>
-      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px">
-        <button class="btn btn-acc" onclick="saveQuickCapture()" style="flex:1">Guardar producto</button>
-        <button class="btn btn-ghost" onclick="document.getElementById('qc-overlay').remove()">Cancelar</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
-  setTimeout(()=>document.getElementById('qc-nombre')?.focus(),80);
-}
-
-async function saveQuickCapture(){
-  const nombre=document.getElementById('qc-nombre')?.value?.trim();
-  if(!nombre){document.getElementById('qc-nombre').style.borderColor='var(--red)';return;}
-  const precio=parseFloat(document.getElementById('qc-precio')?.value)||0;
-  const cat=document.getElementById('qc-cat')?.value||'general';
-  const prov=document.getElementById('qc-prov')?.value||'';
-  const notasExtra=document.getElementById('qc-notas')?.value?.trim()||'';
-  const notas='[PENDIENTE]'+(prov?` Proveedor: ${prov}`:'')+(notasExtra?' — '+notasExtra:'');
-  const d={nombre,categoria:cat,precio_base:precio,produccion:'inhouse',tipo_precio:'fijo',stock:0,notas,materiales_json:[]};
-  try{
-    await sb('productos','','POST',d);
-    await loadAll();
-    document.getElementById('qc-overlay')?.remove();
-    toast('✓ Producto guardado — completa los detalles cuando puedas');
-    renderProducts();
-  }catch(e){toast('Error: '+e.message);}
-}
 
 // ══════════════════════════════════════
 //  CLIENTS
@@ -3345,7 +3135,7 @@ function renderClients(q=''){
   $('main').innerHTML=`<div class="page">
     <div class="ph"><span class="ptitle">Clientes</span>
       <div style="display:flex;gap:6px">
-
+        ${DATA.clientes.length===0?`<button class="btn btn-ghost" onclick="seedData()" style="font-size:11px">Cargar ejemplos</button>`:''}
         <button class="btn btn-acc" onclick="editClient()">+ Nuevo</button>
       </div>
     </div>
@@ -3353,20 +3143,12 @@ function renderClients(q=''){
       <input class="inp" placeholder="Buscar..." oninput="renderClients(this.value)" value="${esc(q)}">
     </div>
     ${list.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">Sin clientes</div>`
-    :list.map(c=>{
-      const ords=DATA.ordenes.filter(o=>o.cliente_id===c.id);
-      const pendientes=ords.filter(o=>!['entregada','cancelada'].includes(o.status)).length;
-      return`<div class="list-row" onclick="viewClient('${c.id}')">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600">${esc(c.nombre)}</div>
-          <div style="font-size:11px;color:var(--t3)">${[c.empresa,c.telefono].filter(Boolean).map(esc).join(' · ')}</div>
-        </div>
-        ${ords.length?`<div style="text-align:right;flex-shrink:0">
-          <div style="font-size:11px;font-weight:700;color:var(--acc)">${ords.length} ord${ords.length!==1?'s':''}</div>
-          ${pendientes>0?`<div style="font-size:9px;color:var(--amber);font-weight:700">${pendientes} activa${pendientes!==1?'s':''}</div>`:''}
-        </div>`:''}
-      </div>`;
-    }).join('')}
+    :list.map(c=>`<div class="list-row" onclick="editClient('${c.id}')">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${esc(c.nombre)}</div>
+        <div style="font-size:11px;color:var(--t3)">${[c.empresa,c.telefono].filter(Boolean).map(esc).join(' · ')}</div>
+      </div>
+    </div>`).join('')}
   </div>`;
 }
 function editClientDesktop(id){
@@ -3377,7 +3159,7 @@ function editClientDesktop(id){
   editClient(id);
   const cl=DATA.clientes.find(c=>c.id===id);
   if(cl){
-    ctxSet('Clientes',cl.nombre);
+    ctxSet('Clientes',clName(cl));
     const ords=DATA.ordenes.filter(o=>o.cliente_id===id);
     const total=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
     dpShow(`<div class="dp-head"><div class="dp-title">Historial</div></div>
@@ -3397,71 +3179,35 @@ function editClientDesktop(id){
       </div>`);
   }
 }
-function viewClient(id){
-  const c=DATA.clientes.find(x=>x.id===id);if(!c)return;
-  const ords=DATA.ordenes.filter(o=>o.cliente_id===id);
-  const totalFact=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
-  const ini=(c.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-  $('main').innerHTML=`<div class="page">
-    <button class="back-btn" onclick="renderClients()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Clientes</button>
-    <div class="ph">
-      <span class="ptitle">${esc(c.nombre)}</span>
-      <button class="btn btn-ghost" onclick="editClient('${c.id}')" style="font-size:11px">✎ Editar</button>
-    </div>
-    <div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-        <div class="dp-avatar" style="width:44px;height:44px;font-size:15px;border-radius:50%;flex-shrink:0">${ini}</div>
-        <div>
-          ${c.empresa?`<div style="font-size:11px;color:var(--t3)">${esc(c.empresa)}</div>`:''}
-          ${c.telefono?`<a href="tel:${esc(c.telefono)}" style="font-size:13px;color:var(--acc);display:block">${esc(c.telefono)}</a>`:''}
-          ${c.email?`<div style="font-size:11px;color:var(--t3)">${esc(c.email)}</div>`:''}
-        </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <div style="flex:1;background:var(--s2);border-radius:6px;padding:8px;text-align:center">
-          <div style="font-size:18px;font-weight:800;color:var(--acc)">${ords.length}</div>
-          <div style="font-size:10px;color:var(--t3)">Órdenes</div>
-        </div>
-        <div style="flex:1;background:var(--s2);border-radius:6px;padding:8px;text-align:center">
-          <div style="font-size:13px;font-weight:800;color:var(--c2);font-family:'DM Mono',monospace">$${fmtS(totalFact)}</div>
-          <div style="font-size:10px;color:var(--t3)">Facturado</div>
-        </div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:12px;font-weight:700;color:var(--t2)">Órdenes</div>
-      <button class="btn btn-acc" onclick="openNewOrderForClient('${c.id}','${esc(c.nombre)}')" style="font-size:11px;padding:4px 10px">+ Nueva</button>
-    </div>
-    ${ords.length===0
-      ?`<div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">Sin órdenes — crea la primera</div>`
-      :ords.map(o=>{
-          const sc=SC_HEX[o.status]||'#555';
-          const lines=DATA.orden_lineas.filter(l=>l.orden_id===o.id).slice(0,2).map(l=>esc(l.producto_nombre||'')).filter(Boolean).join(', ');
-          return`<div class="list-row" onclick="openEditOrder('${o.id}')" style="border-left:3px solid ${sc}">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:600">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-              <div style="font-size:11px;color:var(--t3)">${lines||esc(o.notas||'Sin productos')}</div>
-              ${o.fecha_entrega?`<div style="font-size:10px;color:var(--t3)">${fmtDateES(o.fecha_entrega)}</div>`:''}
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-              <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(parseFloat(o.total||0))}</div>
-              <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:${sc}">${SL[o.status]||o.status}</div>
-            </div>
-          </div>`;
-        }).join('')}
-  </div>`;
-}
-
-function openNewOrderForClient(clientId, clientNombre){
-  OF={id:null,numero:'',cliente_id:clientId,cliente_nombre:clientNombre,status:'cotizacion',fecha_entrega:'',notas:'',moneda:'MXN',descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0,imagenes:[]};
-  renderOrderForm();
-}
-
 function editClient(id){
   const c=id?DATA.clientes.find(x=>x.id===id):null;
   $('main').innerHTML=`<div class="page page-sm">
-    <button class="back-btn" onclick="${c?`viewClient('${c.id}')`:`renderClients()`}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>${c?esc(c.nombre):'Clientes'}</button>
-    <div class="ph"><span class="ptitle">${c?'Editar datos':'Nuevo cliente'}</span></div>
+    <button class="back-btn" onclick="renderClients()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Clientes</button>
+    <div class="ph"><span class="ptitle">${c?esc(clName(c)):'Nuevo cliente'}</span></div>
+    ${c&&(c.telefono||c.email)?`
+    <div class="card" style="margin-bottom:8px">
+      <div class="lbl" style="margin-bottom:8px">Contacto rápido</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${c.telefono?`
+        <a href="tel:${esc(c.telefono)}" class="btn btn-ghost" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Llamar
+        </a>
+        <a href="sms:${esc(c.telefono)}" class="btn btn-ghost" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          SMS
+        </a>
+        <a href="https://wa.me/${esc(c.telefono.replace(/[^0-9]/g,''))}" target="_blank" class="btn btn-ghost" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px;color:#25d366;border-color:rgba(37,211,102,.3)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.121 1.532 5.853L.057 23.5l5.797-1.52A11.937 11.937 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.898a9.885 9.885 0 0 1-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374A9.86 9.86 0 0 1 2.1 12c0-5.461 4.44-9.899 9.9-9.899 5.462 0 9.9 4.438 9.9 9.9 0 5.46-4.438 9.897-9.9 9.897z"/></svg>
+          WhatsApp
+        </a>`:''} 
+        ${c.email?`
+        <a href="mailto:${esc(c.email)}" class="btn btn-ghost" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email
+        </a>`:''} 
+      </div>
+    </div>`:''} 
     <div class="card">
       ${[['cf-n','Nombre',c?.nombre||'','text'],['cf-e','Empresa',c?.empresa||'','text'],['cf-t','Teléfono',c?.telefono||'','tel'],['cf-m','Email',c?.email||'','email'],['cf-d','Dirección',c?.direccion||'','text']].map(([id,lbl,val,type])=>`<div class="fld"><div class="lbl">${lbl}</div><input class="inp" id="${id}" value="${esc(val)}" type="${type}"></div>`).join('')}
       <div class="fld" style="margin-bottom:0"><div class="lbl">Notas</div><textarea class="inp" id="cf-notes">${esc(c?.notas||'')}</textarea></div>
@@ -3473,16 +3219,7 @@ function editClient(id){
     </div>
   </div>`;
 }
-async function saveClient(id){
-  if(window._savingClient)return; window._savingClient=true;
-  const btn=document.querySelector('[onclick*="saveClient"]');if(btn){btn.disabled=true;btn.textContent='Guardando...';}
-  const d={nombre:$('cf-n').value,empresa:$('cf-e').value,telefono:$('cf-t').value,email:$('cf-m').value,direccion:$('cf-d').value,notas:$('cf-notes').value};
-  try{
-    if(id)await sb('clientes',`id=eq.${id}`,'PATCH',d);else await sb('clientes','','POST',d);
-    await loadAll();toast('Guardado ✓');window._savingClient=false;
-    if(id)viewClient(id);else renderClients();
-  }catch(e){window._savingClient=false;if(btn){btn.disabled=false;btn.textContent='Guardar';}toast('Error: '+e.message);}
-}
+async function saveClient(id){const d={nombre:$('cf-n').value,empresa:$('cf-e').value,telefono:$('cf-t').value,email:$('cf-m').value,direccion:$('cf-d').value,notas:$('cf-notes').value};try{if(id)await sb('clientes',`id=eq.${id}`,'PATCH',d);else await sb('clientes','','POST',d);await loadAll();toast('Guardado ✓');renderClients();}catch(e){toast('Error');}}
 async function delClient(id){if(!confirm('¿Eliminar?'))return;try{await sb('clientes',`id=eq.${id}`,'DELETE');await loadAll();renderClients();}catch(e){}}
 
 // ══════════════════════════════════════
@@ -3492,16 +3229,15 @@ function renderSuppliers(){
   $('main').innerHTML=`<div class="page">
     <div class="ph"><span class="ptitle">Proveedores</span>
       <div style="display:flex;gap:6px">
-
+        ${DATA.proveedores.length===0?`<button class="btn btn-ghost" onclick="seedData()" style="font-size:11px">Cargar ejemplos</button>`:''}
         <button class="btn btn-acc" onclick="editSupplier()">+ Nuevo</button>
       </div>
     </div>
-    ${(()=>{const sp=DATA.proveedores.filter(s=>!isDeleted(s));return sp.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">Sin proveedores</div>`
-    :sp.map(s=>`<div class="list-row" onclick="editSupplier('${s.id}')">
+    ${DATA.proveedores.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">Sin proveedores</div>`
+    :DATA.proveedores.map(s=>`<div class="list-row" onclick="editSupplier('${s.id}')">
       <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(s.nombre)}</div><div style="font-size:11px;color:var(--t3)">${[s.contacto,s.telefono].filter(Boolean).map(esc).join(' · ')}</div></div>
       <span style="font-size:11px;color:var(--t3)">${esc(s.categoria||'')}</span>
-    </div>`).join('');})()
-  }
+    </div>`).join('')}
   </div>`;
 }
 function editSupplier(id){
@@ -3520,17 +3256,11 @@ function editSupplier(id){
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-acc" onclick="saveSupplier('${s?.id||''}')">Guardar</button>
       <button class="btn btn-ghost" onclick="renderSuppliers()">Cancelar</button>
-      ${s?`<button class="btn btn-ghost" style="margin-left:auto;color:var(--amber);border-color:rgba(255,183,0,0.3)" onclick="softDelSupplier('${s.id}')">🗄 Archivar</button>`:''}
+      ${s?`<button class="btn btn-ghost" style="margin-left:auto;color:var(--red);border-color:rgba(255,69,69,0.25)" onclick="delSupplier('${s.id}')">Eliminar</button>`:''}
     </div>
   </div>`;
 }
-async function saveSupplier(id){
-  if(window._savingSupplier)return; window._savingSupplier=true;
-  const btn=document.querySelector('[onclick*="saveSupplier"]');if(btn){btn.disabled=true;btn.textContent='Guardando...';}
-  const d={nombre:$('sf-n').value,contacto:$('sf-c').value,telefono:$('sf-t').value,email:$('sf-m').value,direccion:$('sf-d').value,categoria:$('sf-cat').value,notas:$('sf-notes').value};
-  try{if(id)await sb('proveedores',`id=eq.${id}`,'PATCH',d);else await sb('proveedores','','POST',d);await loadAll();toast('Guardado ✓');window._savingSupplier=false;renderSuppliers();}
-  catch(e){window._savingSupplier=false;if(btn){btn.disabled=false;btn.textContent='Guardar';}toast('Error: '+e.message);}
-}
+async function saveSupplier(id){const d={nombre:$('sf-n').value,contacto:$('sf-c').value,telefono:$('sf-t').value,email:$('sf-m').value,direccion:$('sf-d').value,categoria:$('sf-cat').value,notas:$('sf-notes').value};try{if(id)await sb('proveedores',`id=eq.${id}`,'PATCH',d);else await sb('proveedores','','POST',d);await loadAll();toast('Guardado ✓');renderSuppliers();}catch(e){toast('Error');}}
 async function delSupplier(id){if(!confirm('¿Eliminar?'))return;try{await sb('proveedores',`id=eq.${id}`,'DELETE');await loadAll();renderSuppliers();}catch(e){}}
 
 // ══════════════════════════════════════
@@ -3540,7 +3270,7 @@ let _settingsTab='branding'; // 'branding' | 'theme' | 'categories' | 'data' | '
 
 function renderSettings(tab){
   if(tab)_settingsTab=tab;
-  const tabs=[['branding','Marca'],['theme','Tema'],['categories','Categorías'],['data','Datos'],['archivados','Archivados'],['seguridad','Seguridad'],['db','Base de datos']];
+  const tabs=[['branding','Marca'],['theme','Tema'],['categories','Categorías'],['data','Datos'],['seguridad','Seguridad'],['db','Base de datos']];
   const swatches=ACCENT_PRESETS.map(h=>`<div class="swatch${BRAND.accentHex===h?' on':''}" style="background:${h}" data-hex="${h}" onclick="setAccent('${h}')" title="${h}"></div>`).join('');
 
   $('main').innerHTML=`<div class="page page-sm">
@@ -3656,27 +3386,27 @@ function renderSettings(tab){
 
     _settingsTab==='data'?`
     <div class="card" style="margin-bottom:8px">
-      <div class="lbl" style="margin-bottom:6px">Estado de la base de datos</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="padding:10px;background:var(--s2);border-radius:var(--r);text-align:center">
-          <div style="font-size:20px;font-weight:800;color:var(--acc)">${DATA.productos.length}</div>
-          <div style="font-size:10px;color:var(--t3)">Productos</div>
-        </div>
-        <div style="padding:10px;background:var(--s2);border-radius:var(--r);text-align:center">
-          <div style="font-size:20px;font-weight:800;color:var(--acc)">${DATA.clientes.length}</div>
-          <div style="font-size:10px;color:var(--t3)">Clientes</div>
-        </div>
-        <div style="padding:10px;background:var(--s2);border-radius:var(--r);text-align:center">
-          <div style="font-size:20px;font-weight:800;color:var(--acc)">${DATA.proveedores.length}</div>
-          <div style="font-size:10px;color:var(--t3)">Proveedores</div>
-        </div>
+      <div class="lbl" style="margin-bottom:10px">Datos de ejemplo por tipo de negocio</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.5">
+        Carga clientes, productos, proveedores, categorías y órdenes reales para ver el CRM en acción para tu tipo de negocio.
       </div>
-      ${DATA.productos.filter(p=>p.notas&&p.notas.startsWith('[PENDIENTE]')).length>0?`
-      <div style="padding:10px 12px;background:var(--amber-dim,rgba(255,183,0,.1));border:1px solid rgba(255,183,0,.3);border-radius:var(--r);margin-bottom:10px;font-size:12px;color:var(--amber)">
-        ⚠ ${DATA.productos.filter(p=>p.notas&&p.notas.startsWith('[PENDIENTE]')).length} producto(s) con captura pendiente de completar
-        <button class="btn btn-ghost" onclick="navigate('products')" style="font-size:11px;margin-left:8px">Ver</button>
-      </div>`:''}
-      <div
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        ${[
+          {id:'imprenta',icon:'🖨',name:'Imprenta',desc:'Tarjetas, flyers, lonas, señalética'},
+          {id:'carpinteria',icon:'🪵',name:'Carpintería',desc:'Muebles, puertas, elementos de construcción'},
+          {id:'minisuper',icon:'🛒',name:'Minisuper & Barbacoa',desc:'Abarrotes, carnes, comida preparada'},
+          {id:'muebleria',icon:'🛋',name:'Mueblería',desc:'Salas, recámaras, comedores, financiamiento'},
+          {id:'taller',icon:'🔧',name:'Taller Mecánico',desc:'Servicios, refacciones, diagnóstico'},
+          {id:'fotografia',icon:'📸',name:'Fotografía & Video',desc:'Eventos, sesiones, álbumes, streaming'},
+        ].map(b=>`
+          <div style="border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;transition:border-color .1s" 
+               onmouseover="this.style.borderColor='var(--border3)'" onmouseout="this.style.borderColor='var(--border)'"
+               onclick="seedBusiness('${b.id}')">
+            <div style="font-size:20px;margin-bottom:4px">${b.icon}</div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:2px">${b.name}</div>
+            <div style="font-size:10px;color:var(--t3)">${b.desc}</div>
+          </div>`).join('')}
+      </div>
       <div class="card" style="margin-bottom:8px;margin-top:8px">
         <div class="lbl" style="margin-bottom:8px">Mercado Pago — cobro en línea</div>
         <div style="font-size:12px;color:var(--t3);margin-bottom:12px;line-height:1.5">
@@ -3700,55 +3430,6 @@ function renderSettings(tab){
         <div style="font-size:11px;color:var(--t2);margin-bottom:10px;line-height:1.5">Elimina TODOS los datos: órdenes, clientes, productos, proveedores. Esta acción no se puede deshacer.</div>
         <button class="btn btn-ghost" onclick="clearDB()" style="color:var(--red);border-color:rgba(255,69,69,.3);font-size:12px">🗑 Borrar toda la base de datos</button>
       </div>
-    </div>`:
-
-    _settingsTab==='archivados'?`
-    <div class="card" style="margin-bottom:8px">
-      <div class="lbl" style="margin-bottom:6px">Registros archivados</div>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.5">
-        Los registros archivados no aparecen en el sistema pero no se han borrado. Puedes restaurarlos en cualquier momento.
-      </div>
-      ${(()=>{
-        const dp=DATA.productos.filter(p=>isDeleted(p));
-        const do_=DATA.ordenes.filter(o=>isDeleted(o));
-        const ds=DATA.proveedores.filter(s=>isDeleted(s));
-        if(!dp.length&&!do_.length&&!ds.length) return '<div style="padding:20px;text-align:center;color:var(--t3);font-size:12px">Sin registros archivados</div>';
-        let html='';
-        if(do_.length){
-          html+=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Órdenes (${do_.length})</div>`;
-          html+=do_.map(o=>{
-            const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--s2);border-radius:6px;margin-bottom:4px">
-              <div>
-                <div style="font-size:12px;font-weight:600">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-                <div style="font-size:10px;color:var(--t3)">${cl?esc(cl.nombre):'Sin cliente'}</div>
-              </div>
-              <button class="btn btn-ghost" onclick="restoreRecord('ordenes','${o.id}',()=>renderSettings('archivados'))" style="font-size:11px;padding:3px 8px;color:var(--c2);border-color:var(--c2)">↩ Restaurar</button>
-            </div>`;
-          }).join('');
-        }
-        if(dp.length){
-          html+=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 6px">Productos (${dp.length})</div>`;
-          html+=dp.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--s2);border-radius:6px;margin-bottom:4px">
-              <div>
-                <div style="font-size:12px;font-weight:600">${esc(p.nombre)}</div>
-                <div style="font-size:10px;color:var(--t3)">${esc(p.categoria||'')}</div>
-              </div>
-              <button class="btn btn-ghost" onclick="restoreRecord('productos','${p.id}',()=>renderSettings('archivados'))" style="font-size:11px;padding:3px 8px;color:var(--c2);border-color:var(--c2)">↩ Restaurar</button>
-            </div>`).join('');
-        }
-        if(ds.length){
-          html+=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 6px">Proveedores (${ds.length})</div>`;
-          html+=ds.map(s=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--s2);border-radius:6px;margin-bottom:4px">
-              <div>
-                <div style="font-size:12px;font-weight:600">${esc(s.nombre)}</div>
-                <div style="font-size:10px;color:var(--t3)">${esc(s.categoria||'')}</div>
-              </div>
-              <button class="btn btn-ghost" onclick="restoreRecord('proveedores','${s.id}',()=>renderSettings('archivados'))" style="font-size:11px;padding:3px 8px;color:var(--c2);border-color:var(--c2)">↩ Restaurar</button>
-            </div>`).join('');
-        }
-        return html;
-      })()}
     </div>`:
 
     _settingsTab==='seguridad'?`
@@ -3798,49 +3479,14 @@ function renderSettings(tab){
 
     <div class="card">
       <div class="lbl" style="margin-bottom:10px">Supabase</div>
-      <div class="fld"><div class="lbl">URL</div><input class="inp" id="sec-url" value="${esc(SB_URL)}" style="font-size:11px;font-family:'DM Mono',monospace"></div>
-      <div class="fld" style="margin-bottom:12px"><div class="lbl">Key</div><input class="inp" id="sec-key" type="password" value="${esc(SB_KEY)}"></div>
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <button class="btn btn-acc" onclick="saveCredsFromSettings()">Guardar credenciales</button>
+      <div class="fld"><div class="lbl">URL</div><input class="inp" value="${esc(SB_URL)}" disabled style="opacity:.4;font-size:11px;font-family:'DM Mono',monospace"></div>
+      <div class="fld" style="margin-bottom:12px"><div class="lbl">Key</div><input class="inp" type="password" value="${esc(SB_KEY)}" disabled style="opacity:.4"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <button class="btn btn-acc" onclick="connectSb()">Probar conexión</button>
         <span style="font-size:12px;display:flex;align-items:center;gap:5px;color:${sbConn?'var(--green)':'var(--red)'}">
           <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
           ${sbConn?'Conectado':'Desconectado'}
         </span>
-      </div>
-      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:0">
-        <div class="lbl" style="margin-bottom:8px">Google Drive — carpetas de proyecto</div>
-        <div style="font-size:12px;color:var(--t3);margin-bottom:12px;line-height:1.5">
-          Conecta tu Service Account para crear automáticamente una carpeta en Drive por cada orden.
-          <a href="https://console.cloud.google.com" target="_blank" style="color:var(--acc)">Google Cloud Console →</a>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:12px;font-weight:600">Activar Drive</span>
-          <div style="width:36px;height:20px;border-radius:10px;background:${DRIVE_CFG.enabled?'var(--acc)':'var(--border2)'};cursor:pointer;position:relative;transition:background .2s"
-               onclick="DRIVE_CFG.enabled=!DRIVE_CFG.enabled;saveDriveCfg();renderSettings('db')">
-            <div style="position:absolute;top:2px;left:${DRIVE_CFG.enabled?'18':'2'}px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s"></div>
-          </div>
-        </div>
-        ${DRIVE_CFG.enabled?`
-        <div class="fld"><div class="lbl">Client Email (Service Account)</div>
-          <input class="inp" id="drive-email" value="${esc(DRIVE_CFG.clientEmail)}" style="font-size:11px;font-family:'DM Mono',monospace" placeholder="craftcrm-drive@proyecto.iam.gserviceaccount.com"></div>
-        <div class="fld"><div class="lbl">Private Key</div>
-          <textarea class="inp" id="drive-key" rows="3" style="font-size:10px;font-family:'DM Mono',monospace;resize:vertical" placeholder="-----BEGIN PRIVATE KEY-----\n...">${esc(DRIVE_CFG.privateKey)}</textarea></div>
-        <div class="fld"><div class="lbl">Root Folder ID</div>
-          <input class="inp" id="drive-folder" value="${esc(DRIVE_CFG.rootFolderId)}" style="font-size:11px;font-family:'DM Mono',monospace" placeholder="1xon4PMKUDOg96OjG7uILPTx65pYZl2SX"></div>
-        <div style="margin-bottom:10px">
-          <div class="lbl" style="margin-bottom:4px">O pega el archivo JSON de credenciales completo</div>
-          <div style="display:flex;gap:6px">
-            <input class="inp" id="drive-json-paste" style="font-size:11px" placeholder='{"type":"service_account",...}'>
-            <button class="btn btn-ghost" onclick="parseDriveJson()" style="flex-shrink:0;font-size:12px">Importar</button>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-          <button class="btn btn-acc" onclick="saveDriveSettings()" style="font-size:12px">Guardar</button>
-          <button class="btn btn-ghost" id="drive-test-btn" onclick="testDriveConnection()" style="font-size:12px">Probar conexión</button>
-        </div>
-        <div id="drive-status" style="font-size:12px;margin-bottom:4px"></div>
-        `:''}
       </div>
       <div style="border-top:1px solid var(--border);padding-top:12px">
         <div class="lbl" style="margin-bottom:6px">SQL Migration — columnas opcionales</div>
@@ -4022,328 +3668,140 @@ function addUserCat(){
 
 
 // ════════════════════════════════════════════════════════
-
-
+//  SUPABASE STORAGE — upload image, get public URL
 // ════════════════════════════════════════════════════════
-//  GOOGLE DRIVE — Service Account integration
-// ════════════════════════════════════════════════════════
-
-// ── JWT / token generation (pure browser, no backend) ──
-async function _driveGetToken(){
-  if(!DRIVE_CFG.enabled||!DRIVE_CFG.clientEmail||!DRIVE_CFG.privateKey) return null;
-  // Cache token for 55 min
-  if(window._driveToken && window._driveTokenExp > Date.now()) return window._driveToken;
-  try{
-    const now = Math.floor(Date.now()/1000);
-    const header = btoa(JSON.stringify({alg:'RS256',typ:'JWT'})).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-    const claim = btoa(JSON.stringify({
-      iss: DRIVE_CFG.clientEmail,
-      scope: 'https://www.googleapis.com/auth/drive',
-      aud: 'https://oauth2.googleapis.com/token',
-      exp: now+3600, iat: now
-    })).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-    const sigInput = header+'.'+claim;
-    // Import private key
-    const pemBody = DRIVE_CFG.privateKey.replace(/-----[^-]+-----/g,'').replace(/\s/g,'');
-    const keyData = Uint8Array.from(atob(pemBody), c=>c.charCodeAt(0));
-    const cryptoKey = await crypto.subtle.importKey('pkcs8', keyData,
-      {name:'RSASSA-PKCS1-v1_5', hash:'SHA-256'}, false, ['sign']);
-    const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey,
-      new TextEncoder().encode(sigInput));
-    const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-    const jwt = sigInput+'.'+sigB64;
-    // Exchange JWT for access token
-    const r = await fetch('https://oauth2.googleapis.com/token',{
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
-    });
-    const d = await r.json();
-    if(!d.access_token) throw new Error(d.error_description||'Token error');
-    window._driveToken = d.access_token;
-    window._driveTokenExp = Date.now() + 55*60*1000;
-    return d.access_token;
-  }catch(e){
-    console.error('Drive token error:', e);
-    return null;
-  }
-}
-
-async function _driveReq(method, path, body=null, token){
-  const r = await fetch('https://www.googleapis.com/'+path,{
-    method,
-    headers:{
-      Authorization: 'Bearer '+token,
-      ...(body?{'Content-Type':'application/json'}:{})
-    },
-    body: body ? JSON.stringify(body) : null
+async function uploadToStorage(file, path){
+  // Requires a public bucket called 'craftcrm' in your Supabase project
+  // Create it: Storage → New bucket → name: craftcrm → Public: ON
+  const formData = new FormData();
+  formData.append('', file);
+  const url = `${SB_URL}/storage/v1/object/craftcrm/${path}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+    body: formData,
   });
-  if(!r.ok){ const e=await r.json().catch(()=>({error:{message:r.status}})); throw new Error(e.error?.message||r.status); }
-  return r.json();
-}
-
-// ── Create folder for an order ──
-async function driveCreateOrderFolder(orderId, ordenNumero, clienteNombre){
-  if(!DRIVE_CFG.enabled) return null;
-  const token = await _driveGetToken();
-  if(!token){ toast('Drive: sin credenciales'); return null; }
-  const folderName = [ordenNumero, clienteNombre].filter(Boolean).join(' — ');
-  try{
-    const res = await _driveReq('POST','drive/v3/files',{
-      name: folderName,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: [DRIVE_CFG.rootFolderId]
-    }, token);
-    // Save folder ID back to the order
-    if(orderId){
-      await sb('ordenes',`id=eq.${orderId}`,'PATCH',{notas: _driveInjectFolderId(OF.notas||'', res.id)});
+  if(!r.ok){
+    const e = await r.json().catch(()=>({message:r.status}));
+    // If already exists, try upsert
+    if(r.status === 400 || r.status === 409){
+      const r2 = await fetch(url, {
+        method: 'PUT',
+        headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+        body: formData,
+      });
+      if(!r2.ok) throw new Error('Storage error: ' + r2.status);
+    } else {
+      throw new Error(e.message || 'Storage error: ' + r.status);
     }
-    return res.id;
-  }catch(e){ toast('Drive error: '+e.message); return null; }
-}
-
-function _driveInjectFolderId(notas, folderId){
-  // Store folder ID in notas as [DRIVE:id]
-  const clean = (notas||'').replace(/\[DRIVE:[^\]]+\]/g,'').trim();
-  return `[DRIVE:${folderId}]${clean?' '+clean:''}`;
-}
-function _driveExtractFolderId(notas){
-  const m = (notas||'').match(/\[DRIVE:([^\]]+)\]/);
-  return m ? m[1] : null;
-}
-
-// ── List files in order folder ──
-async function driveListFiles(folderId){
-  const token = await _driveGetToken();
-  if(!token) return [];
-  try{
-    const res = await _driveReq('GET',
-      `drive/v3/files?q=${encodeURIComponent(`'${folderId}' in parents and trashed=false`)}&fields=files(id,name,mimeType,size,modifiedTime,webViewLink)&orderBy=name`,
-      null, token);
-    return res.files||[];
-  }catch(e){ return []; }
-}
-
-// ── Get or create folder for current order ──
-async function driveGetOrCreateFolder(){
-  let folderId = _driveExtractFolderId(OF.notas);
-  if(!folderId){
-    if(!OF.id){ toast('Guarda la orden primero'); return null; }
-    folderId = await driveCreateOrderFolder(OF.id, OF.numero, OF.cliente_nombre);
-    if(folderId) OF.notas = _driveInjectFolderId(OF.notas||'', folderId);
   }
-  return folderId;
+  return `${SB_URL}/storage/v1/object/public/craftcrm/${path}`;
 }
 
-// ── Drive folder modal ──
-async function showDriveModal(){
-  if(!DRIVE_CFG.enabled){
-    toast('Activa Google Drive en Ajustes → Base de datos');
-    navigate('settings'); renderSettings('db'); return;
-  }
-  if(!OF.id){ toast('Guarda la orden primero para vincular archivos'); return; }
+async function uploadBase64ToStorage(base64DataUrl, path){
+  // Convert base64 data URL to blob and upload
+  const res = await fetch(base64DataUrl);
+  const blob = await res.blob();
+  const file = new File([blob], path.split('/').pop(), { type: blob.type });
+  return uploadToStorage(file, path);
+}
+
+// ════════════════════════════════════════════════════════
+//  ORDER IMAGES — general images attached to an order
+// ════════════════════════════════════════════════════════
+// Images stored in OF.imagenes = [{url, caption, uploaded_at}]
+// Saved in ordenes.notas_json or as a separate text column
+// Strategy: store in opciones_json on a special "meta" line, or
+// better: store in ordenes table as imagenes_json column (with fallback)
+
+function showOrderImagesModal(){
   closeModal();
+  const imgs = OF.imagenes || [];
   const o = document.createElement('div');
-  o.className='modal-overlay'; o.id='cmodal';
-  o.onclick = e=>{ if(e.target===o) closeModal(); };
-  o.innerHTML=`<div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <div class="modal-title" style="margin:0">📁 Archivos del proyecto</div>
-      <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:18px;padding:4px">✕</button>
-    </div>
-    <div class="modal-sub" id="drive-modal-sub">Cargando...</div>
-    <div id="drive-file-list" style="max-height:340px;overflow-y:auto;margin-bottom:12px"></div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <label class="btn btn-acc" style="cursor:pointer;display:flex;align-items:center;gap:5px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Subir archivo
-        <input type="file" multiple style="display:none" onchange="driveUploadFiles(this.files)">
-      </label>
-      <button class="btn btn-ghost" onclick="driveOpenFolder()" style="display:flex;align-items:center;gap:5px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        Abrir en Drive
-      </button>
-      <div id="drive-upload-status" style="font-size:11px;color:var(--t3);flex:1;text-align:right"></div>
-    </div>
-  </div>`;
-  document.body.appendChild(o);
-  await _driveRefreshFileList();
-}
+  o.className = 'modal-overlay'; o.id = 'cmodal';
+  o.onclick = e => { if(e.target===o) closeModal(); };
 
-async function _driveRefreshFileList(){
-  const sub = document.getElementById('drive-modal-sub');
-  const list = document.getElementById('drive-file-list');
-  if(!sub||!list) return;
-  sub.textContent='Cargando archivos...';
-  list.innerHTML='';
+  const buildContent = () => {
+    const imgGrid = imgs.length ? imgs.map((img,i) => `
+      <div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">
+        <img src="${esc(img.url)}" style="width:100%;height:100px;object-fit:cover;display:block"
+             onerror="this.parentElement.style.display='none'">
+        ${img.caption ? `<div style="font-size:10px;color:var(--t3);padding:4px 6px;background:var(--s2)">${esc(img.caption)}</div>` : ''}
+        <button onclick="removeOrderImage(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:11px">✕</button>
+      </div>`).join('') : `<div style="color:var(--t3);font-size:12px;text-align:center;padding:20px">Sin imágenes adjuntas</div>`;
 
-  const folderId = await driveGetOrCreateFolder();
-  if(!folderId){ sub.textContent='No se pudo obtener la carpeta'; return; }
-  // Save folder reference if it was just created
-  if(OF.id && OF.notas && OF.notas.includes('[DRIVE:')){
-    try{ await sb('ordenes',`id=eq.${OF.id}`,'PATCH',{notas:OF.notas}); }catch(e){}
-  }
-  window._currentDriveFolderId = folderId;
-
-  const files = await driveListFiles(folderId);
-  sub.textContent = files.length
-    ? `${files.length} archivo${files.length!==1?'s':''} — clic para abrir en Drive`
-    : 'Sin archivos — sube el primero';
-
-  if(!files.length){
-    list.innerHTML='<div style="padding:28px;text-align:center;color:var(--t3);font-size:12px">📂 Carpeta vacía</div>';
-    return;
-  }
-
-  const mimeIcon = m => {
-    if(m.includes('folder')) return '📁';
-    if(m.includes('image')) return null; // will show thumbnail
-    if(m.includes('pdf')) return '📄';
-    if(m.includes('spreadsheet')||m.includes('excel')) return '📊';
-    if(m.includes('presentation')||m.includes('powerpoint')) return '📑';
-    if(m.includes('document')||m.includes('word')) return '📝';
-    if(m.includes('video')) return '🎬';
-    if(m.includes('audio')) return '🎵';
-    if(m.includes('zip')||m.includes('compressed')) return '🗜';
-    return '📎';
-  };
-  const fmtSize = b => {
-    const n=parseInt(b||0);
-    return n>1048576?(n/1048576).toFixed(1)+'MB':n>1024?(n/1024).toFixed(0)+'KB':n?n+'B':'';
-  };
-
-  list.innerHTML = files.map(f=>{
-    const icon = mimeIcon(f.mimeType);
-    const isImg = f.mimeType?.includes('image');
-    const thumb = isImg && f.thumbnailLink
-      ? `<img src="${f.thumbnailLink}" style="width:44px;height:44px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.outerHTML='<span style=font-size:22px>🖼</span>'">`
-      : `<span style="font-size:22px;flex-shrink:0;width:44px;text-align:center">${icon||'📎'}</span>`;
-    const date = f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString('es-MX',{day:'2-digit',month:'short'}) : '';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:6px;cursor:pointer;transition:background .1s"
-         onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''"
-         onclick="window.open('${f.webViewLink}','_blank')">
-      ${thumb}
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.name)}</div>
-        <div style="font-size:10px;color:var(--t3)">${[fmtSize(f.size),date].filter(Boolean).join(' · ')}</div>
+    return `<div class="modal" onclick="event.stopPropagation()" style="max-width:480px">
+      <div class="modal-title">Imágenes de la orden</div>
+      <div class="modal-sub">Fotos de referencia, diseños, muestras. Aparecen en el PDF.</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">${imgGrid}</div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="lbl">Agregar imagen</div>
+        <input type="file" id="ord-img-file" accept="image/*" multiple
+          style="font-size:12px;color:var(--t2)"
+          onchange="addOrderImagesFromFile(this)">
+        <div style="display:flex;gap:6px">
+          <input class="inp" id="ord-img-url" placeholder="O pega una URL..." style="font-size:12px">
+          <button class="btn btn-ghost" onclick="addOrderImageFromUrl()" style="flex-shrink:0">Agregar</button>
+        </div>
       </div>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="12" height="12" style="flex-shrink:0;opacity:.3"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="closeModal()">Listo</button>
+      </div>
     </div>`;
-  }).join('');
+  };
+
+  o.innerHTML = buildContent();
+  document.body.appendChild(o);
 }
 
-async function driveUploadFiles(fileList){
-  const files = Array.from(fileList);
+function refreshOrderImagesModal(){
+  const modal = document.querySelector('#cmodal .modal');
+  if(modal) {
+    const imgs = OF.imagenes || [];
+    showOrderImagesModal();
+  }
+}
+
+async function addOrderImagesFromFile(input){
+  const files = Array.from(input.files);
   if(!files.length) return;
-  const folderId = window._currentDriveFolderId || await driveGetOrCreateFolder();
-  if(!folderId){ toast('Sin carpeta de Drive'); return; }
-  const token = await _driveGetToken();
-  if(!token){ toast('Sin conexión a Drive'); return; }
-  const status = document.getElementById('drive-upload-status');
-  let done=0;
+  toast('Subiendo imágenes...', 8000);
   for(const file of files){
-    if(status) status.textContent=`Subiendo ${done+1}/${files.length}: ${file.name}`;
     try{
-      // Multipart upload: metadata + file content
-      const meta = JSON.stringify({name:file.name, parents:[folderId]});
-      const boundary = 'craftcrm_boundary_'+Date.now();
-      const body = new Blob([
-        `--${boundary}
-Content-Type: application/json; charset=UTF-8
-
-${meta}
-`,
-        `--${boundary}
-Content-Type: ${file.type||'application/octet-stream'}
-
-`,
-        file,
-        `
---${boundary}--`
-      ]);
-      const r = await fetch(
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,modifiedTime,webViewLink,thumbnailLink',
-        { method:'POST', headers:{ Authorization:'Bearer '+token, 'Content-Type':`multipart/related; boundary=${boundary}` }, body }
-      );
-      if(!r.ok){ const e=await r.json(); throw new Error(e.error?.message||r.status); }
-      done++;
-    }catch(e){
-      toast('Error subiendo '+file.name+': '+e.message);
-    }
+      const ordId = OF.id || ('tmp_' + Date.now());
+      const path = `orders/${ordId}/${Date.now()}_${file.name.replace(/[^a-z0-9._-]/gi,'_')}`;
+      let url;
+      try{
+        url = await uploadToStorage(file, path);
+      } catch(e){
+        // Fallback: convert to base64 and store inline (no storage bucket needed)
+        url = await new Promise((res,rej) => {
+          const r = new FileReader();
+          r.onload = e => res(e.target.result);
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+      }
+      if(!OF.imagenes) OF.imagenes = [];
+      OF.imagenes.push({ url, caption: file.name.replace(/\.[^.]+$/,''), uploaded_at: todayISO() });
+    } catch(e){ toast('Error: ' + e.message); }
   }
-  if(status) status.textContent=`${done} archivo${done!==1?'s':''} subido${done!==1?'s':''}`;
-  toast(`${done} archivo${done!==1?'s':''} subido${done!==1?'s':''} ✓`);
-  await _driveRefreshFileList();
+  toast('Imágenes agregadas ✓');
+  showOrderImagesModal(); // refresh modal
 }
 
-function driveOpenFolder(){
-  const folderId = window._currentDriveFolderId || _driveExtractFolderId(OF.notas);
-  if(folderId) window.open(`https://drive.google.com/drive/folders/${folderId}`,'_blank');
-  else toast('Sin carpeta asignada');
+function addOrderImageFromUrl(){
+  const url = document.getElementById('ord-img-url')?.value?.trim();
+  if(!url){ toast('Ingresa una URL'); return; }
+  if(!OF.imagenes) OF.imagenes = [];
+  OF.imagenes.push({ url, caption: '', uploaded_at: todayISO() });
+  showOrderImagesModal();
 }
 
-// ── Test Drive connection ──
-async function testDriveConnection(){
-  const btn=document.getElementById('drive-test-btn');
-  const status=document.getElementById('drive-status');
-  if(btn){btn.disabled=true;btn.textContent='Probando...';}
-  if(status) status.textContent='';
-  try{
-    const token = await _driveGetToken();
-    if(!token) throw new Error('No se pudo obtener token');
-    const res = await _driveReq('GET',`drive/v3/files/${DRIVE_CFG.rootFolderId}?fields=name,id`,null,token);
-    if(status) status.innerHTML=`<span style="color:var(--c2)">✓ Conectado — carpeta: "${esc(res.name)}"</span>`;
-    toast('Drive conectado ✓');
-  }catch(e){
-    if(status) status.innerHTML=`<span style="color:var(--red)">✗ Error: ${esc(e.message)}</span>`;
-    toast('Drive error: '+e.message);
-  }finally{
-    if(btn){btn.disabled=false;btn.textContent='Probar conexión';}
-  }
-}
-
-// ════════════════════════════════════════════════════════
-//  SOFT DELETE — marca registros como eliminados sin borrarlos
-// ════════════════════════════════════════════════════════
-function isDeleted(record){ return record?.notas?.startsWith('[DELETED]'); }
-function deletedNotas(record){ return '[DELETED] '+new Date().toISOString().slice(0,10)+(record?.notas&&!record.notas.startsWith('[DELETED]')?' | '+record.notas:''); }
-
-async function softDelProd(id){
-  const p=DATA.productos.find(x=>x.id===id);if(!p)return;
-  if(!confirm(`¿Archivar "${p.nombre}"?\n\nNo se eliminará — quedará oculto y se puede restaurar desde Ajustes.`))return;
-  try{
-    await sb('productos',`id=eq.${id}`,'PATCH',{notas:deletedNotas(p)});
-    await loadAll();toast('Producto archivado');renderProducts();
-  }catch(e){toast('Error: '+e.message);}
-}
-
-async function softDelOrder(id){
-  const o=DATA.ordenes.find(x=>x.id===id);if(!o)return;
-  if(!confirm(`¿Archivar orden ${o.numero||id.slice(0,6).toUpperCase()}?\n\nNo se eliminará — quedará oculta y se puede restaurar desde Ajustes.`))return;
-  try{
-    await sb('ordenes',`id=eq.${id}`,'PATCH',{notas:deletedNotas(o)});
-    await loadAll();toast('Orden archivada');
-    if(isDesktop()){dpHide();renderOrders();}else renderOrders();
-  }catch(e){toast('Error: '+e.message);}
-}
-
-async function softDelSupplier(id){
-  const s=DATA.proveedores.find(x=>x.id===id);if(!s)return;
-  if(!confirm(`¿Archivar "${s.nombre}"?\n\nNo se eliminará — quedará oculto y se puede restaurar desde Ajustes.`))return;
-  try{
-    await sb('proveedores',`id=eq.${id}`,'PATCH',{notas:deletedNotas(s)});
-    await loadAll();toast('Proveedor archivado');renderSuppliers();
-  }catch(e){toast('Error: '+e.message);}
-}
-
-async function restoreRecord(table, id, renderFn){
-  try{
-    const rec=DATA[{productos:'productos',ordenes:'ordenes',proveedores:'proveedores'}[table]]?.find(x=>x.id===id);
-    if(!rec)return;
-    const cleanNotas=(rec.notas||'').replace(/^\[DELETED\][^|]*\| ?/,'').replace(/^\[DELETED\][^]*/,'').trim();
-    await sb(table,`id=eq.${id}`,'PATCH',{notas:cleanNotas||null});
-    await loadAll();toast('Restaurado ✓');renderFn();
-  }catch(e){toast('Error: '+e.message);}
+function removeOrderImage(i){
+  if(!OF.imagenes) return;
+  OF.imagenes.splice(i, 1);
+  showOrderImagesModal();
 }
 
 // ════════════════════════════════════════════════════════
@@ -4892,7 +4350,7 @@ function showMPLinkResult(url, amount, cl){
   o.innerHTML=`<div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
     <div class="modal-title">Link de pago generado</div>
     <div style="background:var(--s2);border-radius:6px;padding:12px;margin-bottom:14px">
-      <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Monto: <strong style="color:var(--t1)">$${fmt(amount)} MXN</strong>${cl?' · '+esc(cl.nombre):''}</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Monto: <strong style="color:var(--t1)">$${fmt(amount)} MXN</strong>${cl?' · '+clName(cl):''}</div>
       <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--acc);word-break:break-all;margin-bottom:8px">${esc(url)}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-acc" style="font-size:11px" onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>toast('Link copiado ✓'))">Copiar link</button>
