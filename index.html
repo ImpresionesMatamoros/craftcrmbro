@@ -624,7 +624,99 @@ select.lf-inp{cursor:pointer;}
 .taller-filter.on{background:var(--acc-dim2);border-color:var(--acc);color:var(--acc);}
 /* Uncategorized column */
 .taller-col.uncat{opacity:.7;}
+/* ══ GOOGLE CONTACTS IMPORT ══ */
+.gc-modal{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;}
+.gc-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);}
+.gc-modal-box{position:relative;z-index:1;background:var(--s2);border:1px solid var(--border3);border-radius:var(--r);width:min(480px,95vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+.gc-modal-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.gc-modal-title{font-size:14px;font-weight:700;}
+.gc-modal-body{flex:1;overflow-y:auto;padding:12px 18px;}
+.gc-modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.gc-contact-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .1s;}
+.gc-contact-row:hover{background:var(--s3);}
+.gc-contact-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--acc);cursor:pointer;flex-shrink:0;}
+.gc-avatar{width:32px;height:32px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--acc);flex-shrink:0;}
+.gc-info{flex:1;min-width:0;}
+.gc-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gc-sub{font-size:10px;color:var(--t3);}
+.gc-select-all{font-size:11px;color:var(--acc);cursor:pointer;font-weight:600;padding:4px 0;}
+
+/* ══ CLIENT PROFILE ══ */
+.cp-hero{display:flex;align-items:center;gap:14px;padding:20px 26px 0;}
+.cp-avatar{width:52px;height:52px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--acc);flex-shrink:0;border:2px solid var(--acc-dim2);}
+.cp-name{font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.2;}
+.cp-company{font-size:12px;color:var(--t3);margin-top:2px;}
+.cp-tabs{display:flex;gap:0;padding:0 26px;border-bottom:1px solid var(--border);margin-top:16px;}
+.cp-tab{padding:8px 16px;background:transparent;border:none;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .1s;}
+.cp-tab:hover{color:var(--t2);}
+.cp-tab.on{color:var(--t1);border-bottom-color:var(--acc);}
+.cp-body{padding:18px 26px;overflow-y:auto;flex:1;}
+.act-feed{display:flex;flex-direction:column;gap:0;}
+.act-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);position:relative;}
+.act-item:last-child{border-bottom:none;}
+.act-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px;}
+.act-body{flex:1;min-width:0;}
+.act-title{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:2px;}
+.act-meta{font-size:11px;color:var(--t3);}
+.act-text{font-size:12px;color:var(--t2);margin-top:4px;line-height:1.5;white-space:pre-wrap;}
+.act-badge{display:inline-block;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;margin-left:6px;vertical-align:middle;}
+.note-compose{background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:14px;}
+.note-type-btns{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;}
+.nt-btn{padding:3px 10px;border-radius:20px;border:1px solid var(--border2);background:transparent;font-size:10px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .1s;}
+.nt-btn:hover{border-color:var(--border3);color:var(--t2);}
+.nt-btn.on{background:var(--acc-dim2);border-color:var(--acc);color:var(--acc);}
+.pend-ord{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s1);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;cursor:pointer;transition:border-color .1s;}
+.pend-ord:hover{border-color:var(--border3);}
+.pend-ord-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.cp-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0;}
+.cp-kpi{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;text-align:center;}
+.cp-kpi-val{font-size:17px;font-weight:700;font-family:'DM Mono',monospace;}
+.cp-kpi-lbl{font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+
+
+/* ══ DASHBOARD ══ */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;}
+.dash-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .15s;display:flex;flex-direction:column;}
+.dash-card:hover{border-color:var(--border3);}
+.dash-card-head{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer;}
+.dash-card-avatar{width:30px;height:30px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--acc);flex-shrink:0;}
+.dash-card-name{font-size:13px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dash-card-sub{font-size:10px;color:var(--t3);}
+.dash-card-body{padding:8px 13px;flex:1;}
+.dash-note-row{padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;line-height:1.4;color:var(--t2);}
+.dash-note-row:last-child{border-bottom:none;}
+.dash-note-tag{display:inline-block;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;margin-right:4px;text-transform:uppercase;vertical-align:middle;}
+.dash-ord-row{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.dash-ord-row:last-child{border-bottom:none;}
+.dash-add-card{background:transparent;border:2px dashed var(--border2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;min-height:110px;cursor:pointer;transition:all .15s;color:var(--t3);font-size:12px;font-weight:600;gap:7px;}
+.dash-add-card:hover{border-color:var(--border3);color:var(--t2);background:var(--s1);}
+.dash-remove-btn{width:22px;height:22px;border-radius:50%;background:transparent;border:1px solid var(--border2);color:var(--t3);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s;}
+.dash-remove-btn:hover{background:rgba(255,69,69,.15);border-color:var(--red);color:var(--red);}
+/* Urgency section */
+.urg-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-left:3px solid var(--border);border-radius:0 6px 6px 0;background:var(--s1);margin-bottom:4px;cursor:pointer;transition:all .1s;}
+.urg-row:hover{border-left-color:currentColor;background:var(--s2);}
+/* ══ NOTE COMPOSE v2 ══ */
+.nc2{background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-bottom:14px;}
+.nc2-textarea{width:100%;padding:10px 12px;background:transparent;border:none;color:var(--t1);font-family:inherit;font-size:12px;resize:none;min-height:60px;outline:none;line-height:1.5;box-sizing:border-box;}
+.nc2-textarea::placeholder{color:var(--t3);}
+.nc2-footer{display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--border);background:var(--s3);flex-wrap:wrap;}
+.nc2-label-sel{padding:4px 8px;border-radius:16px;background:var(--s4);border:1px solid var(--border2);color:var(--t2);font-size:11px;font-weight:600;cursor:pointer;outline:none;font-family:inherit;transition:border-color .1s;}
+.nc2-label-sel:focus{border-color:var(--acc);}
+.nc2-cotiz-btn{padding:4px 11px;border-radius:16px;border:1px solid rgba(255,107,53,.4);background:rgba(255,107,53,.1);color:var(--c3);font-size:11px;font-weight:700;cursor:pointer;transition:all .1s;white-space:nowrap;}
+.nc2-cotiz-btn:hover{background:rgba(255,107,53,.22);}
+.nc2-send{margin-left:auto;padding:5px 14px;border-radius:16px;background:var(--acc);border:none;color:#080808;font-size:11px;font-weight:700;cursor:pointer;transition:filter .1s;}
+.nc2-send:hover{filter:brightness(.88);}
+/* Pending cotiz badge in feed */
+.pending-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.35);color:var(--c3);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;margin-top:5px;transition:all .1s;}
+.pending-badge:hover{background:rgba(255,107,53,.28);}
+.pending-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--c3);animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+/* Cobro pendiente */
+.cobro-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,69,69,.07);border:1px solid rgba(255,69,69,.25);border-radius:6px;margin-bottom:4px;cursor:pointer;transition:all .1s;}
+.cobro-row:hover{background:rgba(255,69,69,.13);border-color:rgba(255,69,69,.45);}
 </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <meta name="google-signin-client_id" content="921894159659-f28bl8jcn0h2hdbarosqtltrk6en36do.apps.googleusercontent.com">
 </head>
 <body>
 <div id="app">
@@ -901,27 +993,6 @@ const PRESET_THEMES={
 let BRAND={name:'CraftCRM',logoUrl:'',theme:'forest',custom:{c1:'#d4ff47',c2:'#3ddc84',c3:'#ff6b35',c4:'#4d94ff',c5:'#efefef'}};
 // Legacy compat
 const ACCENT_PRESETS=['#d4ff47','#ff6b35','#00d4ff','#ff4db8','#7c3aed','#10b981','#f59e0b','#ef4444'];
-
-// ── TAX CONFIG ──
-// taxRates: array of {id, label, rate (0-100), enabled}
-const TAX_KEY = 'craftcrm_taxes';
-let TAX_CONFIG = [];
-function loadTaxConfig(){
-  try{const s=localStorage.getItem(TAX_KEY);if(s)TAX_CONFIG=JSON.parse(s);}catch(e){}
-  if(!Array.isArray(TAX_CONFIG)||TAX_CONFIG.length===0){
-    TAX_CONFIG=[{id:'iva',label:'IVA',rate:16,enabled:true}];
-  }
-}
-function saveTaxConfig(){localStorage.setItem(TAX_KEY,JSON.stringify(TAX_CONFIG));}
-// Returns the single "active" tax rate for use in OF (backward compat with OF.iva toggle)
-function getActiveTaxRate(){
-  const active=TAX_CONFIG.find(t=>t.enabled);
-  return active?parseFloat(active.rate)||0:0;
-}
-function getActiveTaxLabel(){
-  const active=TAX_CONFIG.find(t=>t.enabled);
-  return active?active.label:'Impuesto';
-}
 
 function loadBrand(){
   try{
@@ -1247,7 +1318,7 @@ function buildClientDP(cl,ordId){
             <div class="dp-ord-total">$${fmtS(parseFloat(o.total||0))}</div>
           </div>`;}).join('')}
       </div>
-      <button class="btn btn-ghost" style="width:100%;font-size:11px;justify-content:center;margin-top:4px" onclick="navigate('clients');setTimeout(()=>editClient('${cl?.id||''}'),50)">Ver cliente →</button>
+      <button class="btn btn-ghost" style="width:100%;font-size:11px;justify-content:center;margin-top:4px" onclick="navigate('clients');setTimeout(()=>openClientProfile('${cl?.id||''}'),50)">Ver cliente →</button>
     </div>`;
 }
 
@@ -2257,13 +2328,10 @@ function calcTotals() {
   const sub = OF.lines.reduce((s, l) => s + (parseFloat(l.subtotal) || 0), 0);
   const disc = sub * (parseFloat(OF.descuento_pct) || 0) / 100;
   const after = sub - disc;
-  const taxRate = getActiveTaxRate();
-  const iva = OF.iva ? after * (taxRate / 100) : 0;
+  const iva = OF.iva ? after * 0.16 : 0;
   return { sub, disc, after, iva, total: after + iva };
 }
 function buildTotalsHTML(tot){
-  const taxRate=getActiveTaxRate();
-  const taxLabel=getActiveTaxLabel();
   return`
     <div class="tot-row"><span>Subtotal</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.sub)}</span></div>
     <div class="tot-row">
@@ -2275,7 +2343,7 @@ function buildTotalsHTML(tot){
       <span style="font-family:'DM Mono',monospace;color:${tot.disc>0?'var(--red)':'var(--t3)'}">${tot.disc>0?'−$'+fmt(tot.disc):'—'}</span>
     </div>
     <div class="tot-row">
-      <span><button class="iva-btn${OF.iva?' on':''}" onclick="OF.iva=!OF.iva;refreshTotals()">${OF.iva?'✓ ':''} ${taxLabel}${taxRate?` ${taxRate}%`:''}</button></span>
+      <span><button class="iva-btn${OF.iva?' on':''}" onclick="OF.iva=!OF.iva;refreshTotals()">${OF.iva?'✓ ':''} IVA 16%</button></span>
       <span style="font-family:'DM Mono',monospace;color:${OF.iva?'var(--t1)':'var(--t3)'}">${OF.iva?'$'+fmt(tot.iva):'—'}</span>
     </div>
     <div class="tot-total"><span>Total</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.total)}&nbsp;${OF.moneda}</span></div>`;
@@ -2797,9 +2865,7 @@ function printOrder() {
   <div class="totals">
     <div class="tot-row"><span>Subtotal</span><span>$${fmt(tot.sub)}</span></div>
     ${tot.disc>0?`<div class="tot-row"><span>Descuento (${OF.descuento_pct}%)</span><span>-$${fmt(tot.disc)}</span></div>`:''}
-    ${OF.iva?`<div class="tot-row"><span>${getActiveTaxLabel()}${getActiveTaxRate()?` (${getActiveTaxRate()}%)`:''}
-</span><span>$${fmt(tot.iva)}</span></div>`:''}
-
+    ${OF.iva?`<div class="tot-row"><span>IVA (16%)</span><span>$${fmt(tot.iva)}</span></div>`:''}
     <div class="tot-final"><span>Total</span><span>$${fmt(tot.total)} ${OF.moneda}</span></div>
   </div>
   ${OF.notas?`<div class="notes"><strong>Notas:</strong> ${esc(OF.notas)}</div>`:''}
@@ -2838,7 +2904,7 @@ Tu cotización de *${esc(BRAND.name || 'CraftCRM')}*:
 
 ${lines}
 
-${tot.disc > 0 ? `Descuento: -$${fmt(tot.disc)}\n` : ''}${OF.iva ? `${getActiveTaxLabel()}: $${fmt(tot.iva)}\n` : ''}_Total: *$${fmt(tot.total)} ${OF.moneda}*_
+${tot.disc > 0 ? `Descuento: -$${fmt(tot.disc)}\n` : ''}${OF.iva ? `IVA: $${fmt(tot.iva)}\n` : ''}_Total: *$${fmt(tot.total)} ${OF.moneda}*_
 
 ${OF.fecha_entrega ? `📅 Fecha de entrega: ${fmtDateES(OF.fecha_entrega)}` : ''}
 ${OF.notas ? `\n📝 ${OF.notas}` : ''}
@@ -3134,12 +3200,38 @@ async function delProd(id){if(!confirm('¿Eliminar?'))return;try{await sb('produ
 // ══════════════════════════════════════
 //  CLIENTS
 // ══════════════════════════════════════
+
+// ── Client notes / activity log (localStorage) ──
+const CL_NOTES_KEY = 'craftcrm_cl_notes';
+let _clNotes = {};
+function loadClNotes(){ try{const s=localStorage.getItem(CL_NOTES_KEY);if(s)_clNotes=JSON.parse(s);}catch(e){} }
+function saveClNotes(){ localStorage.setItem(CL_NOTES_KEY,JSON.stringify(_clNotes)); }
+function getClNotes(cid){ return (_clNotes[cid]||[]).slice().reverse(); } // newest first
+function addClNote(cid, type, text){
+  if(!_clNotes[cid]) _clNotes[cid]=[];
+  _clNotes[cid].push({id:'n'+Date.now(),type,text:text.trim(),ts:new Date().toISOString()});
+  saveClNotes();
+}
+function delClNote(cid, nid){
+  if(!_clNotes[cid]) return;
+  _clNotes[cid]=_clNotes[cid].filter(n=>n.id!==nid);
+  saveClNotes();
+}
+loadClNotes();
+
+let _cpTab = 'actividad'; // 'actividad' | 'ordenes' | 'datos'
+let _cpNoteType = 'nota';
+
 function renderClients(q=''){
-  const list=q?DATA.clientes.filter(c=>(c.nombre||'').toLowerCase().includes(q.toLowerCase())):DATA.clientes;
+  const list=q?DATA.clientes.filter(c=>(c.nombre||'').toLowerCase().includes(q.toLowerCase())||(c.empresa||'').toLowerCase().includes(q.toLowerCase())):DATA.clientes;
   if(isDesktop()){
     lpShow(`<div class="lp-head">
         <div class="lp-title">Clientes
-          <button class="btn btn-acc" onclick="editClient()" style="font-size:11px;padding:4px 10px">+ Nuevo</button>
+          <button class="btn btn-acc" onclick="openClientProfile(null,'datos')" style="font-size:11px;padding:4px 10px">+ Nuevo</button>
+          <button class="btn btn-ghost" onclick="gcImportOpen()" style="font-size:11px;padding:4px 10px" title="Importar de Google Contacts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="12" height="12"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M15.5 8.5c-.83-.83-2-1.35-3.27-1.35-2.56 0-4.63 2.07-4.63 4.63s2.07 4.63 4.63 4.63c2.28 0 4.18-1.55 4.54-3.63H12.5V11h5.45c.07.42.1.85.1 1.28 0 3.93-2.63 6.72-6.05 6.72-3.72 0-6.73-3.01-6.73-6.73S8.28 5.55 12 5.55c1.85 0 3.5.7 4.74 1.85L15.5 8.5z"/></svg>
+            Google
+          </button>
         </div>
         <div class="lp-search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -3150,107 +3242,279 @@ function renderClients(q=''){
         ${list.length===0?`<div style="padding:20px;text-align:center;color:var(--t3);font-size:11px">Sin clientes</div>`
         :list.map(c=>{
           const ords=DATA.ordenes.filter(o=>o.cliente_id===c.id);
+          const active=ords.filter(o=>!['entregada','cancelada'].includes(o.status));
           const total=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
           const ini=(c.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-          return`<div class="lp-item${_lpSelectedId===c.id?' selected':''}" onclick="editClientDesktop('${c.id}')">
-            <div class="dp-avatar" style="width:28px;height:28px;font-size:10px;border-radius:50%;flex-shrink:0">${ini}</div>
+          const notes=(_clNotes[c.id]||[]).length;
+          return`<div class="lp-item${_lpSelectedId===c.id?' selected':''}" onclick="openClientProfileDesktop('${c.id}')">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--acc);flex-shrink:0">${ini}</div>
             <div class="lp-item-body">
               <div class="lp-item-name">${esc(c.nombre)}</div>
-              <div class="lp-item-meta">${esc(c.empresa||'')}${c.empresa&&ords.length?' · ':''}${ords.length?ords.length+' órdenes':''}</div>
+              <div class="lp-item-meta">${esc(c.empresa||'')}${c.empresa&&(active.length||notes)?' · ':''}${active.length?`<span style="color:var(--amber)">${active.length} activa${active.length!==1?'s':''}</span>`:''}${active.length&&notes?' · ':''}${notes?`${notes} nota${notes!==1?'s':''}`:''}
+              </div>
             </div>
             ${total>0?`<div class="lp-item-amt">$${fmtS(total)}</div>`:''}
           </div>`;}).join('')}
       </div>`);
     ctxSet('Clientes');dpHide();
+    $('main').innerHTML=`<div style="padding:60px 0;text-align:center;color:var(--t3)">
+      <div style="font-size:28px;margin-bottom:8px;opacity:.2">←</div>
+      <div style="font-size:13px">Selecciona un cliente</div>
+    </div>`;
+    return;
   }
   $('main').innerHTML=`<div class="page">
     <div class="ph"><span class="ptitle">Clientes</span>
       <div style="display:flex;gap:6px">
         ${DATA.clientes.length===0?`<button class="btn btn-ghost" onclick="seedData()" style="font-size:11px">Cargar ejemplos</button>`:''}
-        <button class="btn btn-acc" onclick="editClient()">+ Nuevo</button>
+        <button class="btn btn-acc" onclick="openClientProfile(null,'datos')">+ Nuevo</button>
+        <button class="btn btn-ghost" onclick="gcImportOpen()" style="font-size:11px;padding:5px 10px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M15.5 8.5c-.83-.83-2-1.35-3.27-1.35-2.56 0-4.63 2.07-4.63 4.63s2.07 4.63 4.63 4.63c2.28 0 4.18-1.55 4.54-3.63H12.5V11h5.45c.07.42.1.85.1 1.28 0 3.93-2.63 6.72-6.05 6.72-3.72 0-6.73-3.01-6.73-6.73S8.28 5.55 12 5.55c1.85 0 3.5.7 4.74 1.85L15.5 8.5z"/></svg>
+          Google
+        </button>
       </div>
     </div>
     <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="inp" placeholder="Buscar..." oninput="renderClients(this.value)" value="${esc(q)}">
+      <input class="inp" placeholder="Buscar nombre o empresa..." oninput="renderClients(this.value)" value="${esc(q)}">
     </div>
     ${list.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">Sin clientes</div>`
-    :list.map(c=>`<div class="list-row" onclick="editClient('${c.id}')">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600">${esc(c.nombre)}</div>
-        <div style="font-size:11px;color:var(--t3)">${[c.empresa,c.telefono].filter(Boolean).map(esc).join(' · ')}</div>
-      </div>
-    </div>`).join('')}
+    :list.map(c=>{
+      const ords=DATA.ordenes.filter(o=>o.cliente_id===c.id);
+      const active=ords.filter(o=>!['entregada','cancelada'].includes(o.status));
+      const total=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+      const ini=(c.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+      return`<div class="list-row" onclick="openClientProfile('${c.id}')">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--acc);flex-shrink:0">${ini}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${esc(c.nombre)}</div>
+          <div style="font-size:11px;color:var(--t3)">${[c.empresa,c.telefono].filter(Boolean).map(esc).join(' · ')}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${active.length?`<div style="font-size:11px;font-weight:700;color:var(--amber)">${active.length} pendiente${active.length!==1?'s':''}</div>`:''}
+          ${total>0?`<div style="font-size:11px;color:var(--t3);font-family:'DM Mono',monospace">$${fmtS(total)}</div>`:''}
+        </div>
+      </div>`;}).join('')}
   </div>`;
 }
-function editClientDesktop(id){
+
+function openClientProfileDesktop(id){
   _lpSelectedId=id;
   document.querySelectorAll('#list-panel .lp-item').forEach(el=>el.classList.remove('selected'));
   const sel=document.querySelector(`#list-panel .lp-item[onclick*="${id}"]`);
   if(sel)sel.classList.add('selected');
-  editClient(id);
-  const cl=DATA.clientes.find(c=>c.id===id);
-  if(cl){
-    ctxSet('Clientes',clName(cl));
-    const ords=DATA.ordenes.filter(o=>o.cliente_id===id);
-    const total=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
-    dpShow(`<div class="dp-head"><div class="dp-title">Historial</div></div>
-      <div class="dp-body">
-        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:8px;margin-bottom:10px">
-          <span style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase">Total facturado</span>
-          <span style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--acc)">$${fmtS(total)}</span>
-        </div>
-        ${ords.length===0?'<div style="font-size:11px;color:var(--t3)">Sin órdenes</div>'
-        :ords.map(o=>{const sc=SC_HEX[o.status]||'#555';
-          return`<div class="dp-ord" onclick="navigate('orders');setTimeout(()=>openOrderDesktop('${o.id}'),50)">
-            <div class="dp-ord-dot" style="background:${sc}"></div>
-            <div><div class="dp-ord-num">${esc(o.numero||o.id.slice(0,6).toUpperCase())}</div>
-            <div style="font-size:9px;color:var(--t3)">${esc(SL[o.status]||o.status)}</div></div>
-            <div class="dp-ord-total">$${fmtS(parseFloat(o.total||0))}</div>
-          </div>`;}).join('')}
-      </div>`);
-  }
+  openClientProfile(id);
 }
-function editClient(id){
-  const c=id?DATA.clientes.find(x=>x.id===id):null;
-  $('main').innerHTML=`<div class="page page-sm">
-    <button class="back-btn" onclick="renderClients()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Clientes</button>
-    <div class="ph"><span class="ptitle">${c?esc(clName(c)):'Nuevo cliente'}</span></div>
-    ${c&&(c.telefono||c.email)?`
-    <div class="card" style="margin-bottom:8px">
-      <div class="lbl" style="margin-bottom:8px">Contacto rápido</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${c.telefono?`
-        <a href="tel:${esc(c.telefono)}" class="btn btn-ghost" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          Llamar
-        </a>
-        <a href="sms:${esc(c.telefono)}" class="btn btn-ghost" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          SMS
-        </a>
-        <a href="https://wa.me/${esc(c.telefono.replace(/[^0-9]/g,''))}" target="_blank" class="btn btn-ghost" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px;color:#25d366;border-color:rgba(37,211,102,.3)">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.121 1.532 5.853L.057 23.5l5.797-1.52A11.937 11.937 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.898a9.885 9.885 0 0 1-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374A9.86 9.86 0 0 1 2.1 12c0-5.461 4.44-9.899 9.9-9.899 5.462 0 9.9 4.438 9.9 9.9 0 5.46-4.438 9.897-9.9 9.897z"/></svg>
-          WhatsApp
-        </a>`:''} 
-        ${c.email?`
-        <a href="mailto:${esc(c.email)}" class="btn btn-ghost" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:5px">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Email
-        </a>`:''} 
+
+// ── The main client profile view ──
+function openClientProfile(id, forceTab){
+  const c = id ? DATA.clientes.find(x=>x.id===id) : null;
+  if(forceTab) _cpTab = forceTab;
+  else if(!id) _cpTab = 'datos'; // new client always opens datos
+  const isNew = !id;
+
+  if(isDesktop() && id){
+    const cl2=DATA.clientes.find(x=>x.id===id);
+    ctxSet('Clientes', cl2?clName(cl2):'Nuevo');
+    dpHide();
+  }
+
+  const now = new Date();
+  const ords = id ? DATA.ordenes.filter(o=>o.cliente_id===id) : [];
+  const active = ords.filter(o=>!['entregada','cancelada'].includes(o.status));
+  const totalFact = ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+  const notes = getClNotes(id||'');
+
+  const ini = (c?.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+  // ── TAB: actividad ──
+  // NOTE_CFG lives globally (defined in dashboard section)
+
+  const actHtml = `
+    <div class="nc2">
+      <textarea class="nc2-textarea" id="cp-note-inp" placeholder="Escribe aquí: llamada, solicitud, cambio, nota..."></textarea>
+      <div class="nc2-footer">
+        <select class="nc2-label-sel" id="cp-note-type" onchange="_cpNoteType=this.value">
+          ${Object.entries(NOTE_CFG).map(([k,v])=>`<option value="${k}" ${_cpNoteType===k?'selected':''}>${v.icon} ${v.label}</option>`).join('')}
+        </select>
+        <button class="nc2-cotiz-btn" onclick="cpMarkPendingCotiz('${id||''}')">💰 Convertir en cotización</button>
+        <button class="nc2-send" onclick="cpAddNote('${id||''}')">Agregar →</button>
       </div>
-    </div>`:''} 
+    </div>
+    ${notes.length===0
+      ? `<div style="padding:24px 0;text-align:center;color:var(--t3);font-size:12px">Sin actividad aún — registra llamadas, solicitudes y notas</div>`
+      : `<div class="act-feed">${notes.map(n=>{
+          const cfg=NOTE_CFG[n.type]||NOTE_CFG.nota;
+          const d=new Date(n.ts);
+          const dateStr=d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+          const timeStr=d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+          const pendBtn=n.pendingCotiz
+            ? '<button class="pending-badge" onclick="cpOpenPendingCotiz(\''+id+'\',\''+n.id+'\')"><span class="dot"></span>PENDIENTE DE COTIZAR — click para abrir cotización</button>'
+            : '';
+          const delBtn='<button class="btn-icon del" title="Eliminar" onclick="cpDelNote(\''+id+'\',\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+          return '<div class="act-item">'
+            +'<div class="act-icon" style="background:'+cfg.bg+';color:'+cfg.color+'">'+cfg.icon+'</div>'
+            +'<div class="act-body">'
+              +'<div class="act-title">'+cfg.label+' <span class="act-badge" style="background:'+cfg.bg+';color:'+cfg.color+'">'+cfg.label.toUpperCase()+'</span></div>'
+              +'<div class="act-meta">'+dateStr+' · '+timeStr+'</div>'
+              +'<div class="act-text">'+esc(n.text)+'</div>'
+              +pendBtn
+            +'</div>'
+            +delBtn
+            +'</div>';
+        }).join('')}</div>`
+    }`;
+
+    // ── TAB: ordenes ──
+  const pendOrds = active.sort((a,b)=>{
+    if(!a.fecha_entrega && !b.fecha_entrega) return 0;
+    if(!a.fecha_entrega) return 1;
+    if(!b.fecha_entrega) return -1;
+    return a.fecha_entrega.localeCompare(b.fecha_entrega);
+  });
+  const pastOrds = ords.filter(o=>['entregada','cancelada'].includes(o.status)).slice(0,10);
+
+  const ordsHtml = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em">Pendientes (${pendOrds.length})</div>
+      <button class="btn btn-acc" onclick="openNewOrderForClient('${id||''}')" style="font-size:11px;padding:4px 12px">+ Nueva orden</button>
+    </div>
+    ${pendOrds.length===0?`<div style="padding:14px 0;font-size:12px;color:var(--t3)">Sin órdenes activas</div>`
+    :pendOrds.map(o=>{
+      const sc=SC_HEX[o.status]||'#555';
+      const daysLeft=o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
+      const urgentColor=daysLeft!==null&&daysLeft<0?'var(--red)':daysLeft!==null&&daysLeft<=3?'var(--amber)':null;
+      return`<div class="pend-ord" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
+        <div class="pend-ord-dot" style="background:${sc}"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700">${esc(o.numero||o.id.slice(0,8).toUpperCase())} <span style="font-size:10px;font-weight:600;color:${sc}">${esc(SL[o.status]||o.status)}</span></div>
+          ${o.fecha_entrega?`<div style="font-size:11px;color:${urgentColor||'var(--t3)'};font-weight:${urgentColor?'700':'400'}">
+            ${daysLeft<0?'⚠ '+Math.abs(daysLeft)+'d atrasado':daysLeft===0?'⚠ Hoy':daysLeft===1?'⏰ Mañana':fmtDateES(o.fecha_entrega)+' ('+daysLeft+'d)'}
+          </div>`:''}
+          ${o.notas?`<div style="font-size:10px;color:var(--t3);font-style:italic;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.notas)}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(parseFloat(o.total||0))}</div>
+        </div>
+      </div>`;}).join('')}
+    ${pastOrds.length?`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px">Historial (${pastOrds.length})</div>
+    ${pastOrds.map(o=>{const sc=SC_HEX[o.status]||'#555';
+      return`<div class="pend-ord" style="opacity:.7" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
+        <div class="pend-ord-dot" style="background:${sc}"></div>
+        <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+          <div style="font-size:10px;color:var(--t3)">${o.fecha_entrega?fmtDateES(o.fecha_entrega)+' · ':''}<span style="color:${sc}">${esc(SL[o.status]||o.status)}</span></div></div>
+        <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t3)">$${fmtS(parseFloat(o.total||0))}</div>
+      </div>`;}).join('')}`:''}`;
+
+  // ── TAB: datos ──
+  const datosHtml = `
     <div class="card">
-      ${[['cf-n','Nombre',c?.nombre||'','text'],['cf-e','Empresa',c?.empresa||'','text'],['cf-t','Teléfono',c?.telefono||'','tel'],['cf-m','Email',c?.email||'','email'],['cf-d','Dirección',c?.direccion||'','text']].map(([id,lbl,val,type])=>`<div class="fld"><div class="lbl">${lbl}</div><input class="inp" id="${id}" value="${esc(val)}" type="${type}"></div>`).join('')}
-      <div class="fld" style="margin-bottom:0"><div class="lbl">Notas</div><textarea class="inp" id="cf-notes">${esc(c?.notas||'')}</textarea></div>
+      ${[['cf-n','Nombre',c?.nombre||'','text'],['cf-e','Empresa',c?.empresa||'','text'],['cf-t','Teléfono',c?.telefono||'','tel'],['cf-m','Email',c?.email||'','email'],['cf-d','Dirección',c?.direccion||'','text']].map(([fid,lbl,val,type])=>`
+        <div class="fld"><div class="lbl">${lbl}</div><input class="inp" id="${fid}" value="${esc(val)}" type="${type}"></div>`).join('')}
+      <div class="fld" style="margin-bottom:0"><div class="lbl">Notas del cliente</div>
+        <textarea class="inp" id="cf-notes" rows="3">${esc(c?.notas||'')}</textarea>
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-acc" onclick="saveClient('${c?.id||''}')">Guardar</button>
+      <button class="btn btn-acc" onclick="saveClientFromProfile('${c?.id||''}')">Guardar</button>
       <button class="btn btn-ghost" onclick="renderClients()">Cancelar</button>
       ${c?`<button class="btn btn-ghost" style="margin-left:auto;color:var(--red);border-color:rgba(255,69,69,0.25)" onclick="delClient('${c.id}')">Eliminar</button>`:''}
+    </div>`;
+
+  const tabContent = _cpTab==='actividad'?actHtml : _cpTab==='ordenes'?ordsHtml : datosHtml;
+
+  $('main').innerHTML = `<div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+    <div class="cp-hero">
+      <button class="back-btn" onclick="renderClients()" style="display:flex;align-items:center;gap:5px;padding:0;font-size:11px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
+        Clientes
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;padding:8px 26px 0">
+      <div class="cp-avatar">${ini}</div>
+      <div style="flex:1;min-width:0">
+        <div class="cp-name">${c?esc(clName(c)):'Nuevo cliente'}</div>
+        ${c?.empresa?`<div class="cp-company">${esc(c.empresa)}</div>`:''}
+        ${c?.telefono||c?.email?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          ${c.telefono?`<a href="tel:${esc(c.telefono)}" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px">📞 Llamar</a>
+          <a href="https://wa.me/${esc((c.telefono||'').replace(/[^0-9]/g,''))}" target="_blank" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px;color:#25d366;border-color:rgba(37,211,102,.3)">WhatsApp</a>`:''}
+          ${c.email?`<a href="mailto:${esc(c.email)}" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px">✉ Email</a>`:''}
+        </div>`:''}
+      </div>
+      ${c?`<button class="btn btn-acc" onclick="openNewOrderForClient('${id}')" style="font-size:12px;padding:6px 12px;flex-shrink:0">+ Orden</button>`:''}
+    </div>
+    ${c?`<div class="cp-kpis" style="margin:12px 26px 0">
+      <div class="cp-kpi"><div class="cp-kpi-val">${ords.length}</div><div class="cp-kpi-lbl">Órdenes</div></div>
+      <div class="cp-kpi"><div class="cp-kpi-val" style="color:${active.length?'var(--amber)':'var(--t3)'}">${active.length}</div><div class="cp-kpi-lbl">Pendientes</div></div>
+      <div class="cp-kpi"><div class="cp-kpi-val" style="color:var(--c2)">$${fmtS(totalFact)}</div><div class="cp-kpi-lbl">Facturado</div></div>
+    </div>`:''}
+    <div class="cp-tabs">
+      ${c?`<button class="cp-tab${_cpTab==='actividad'?' on':''}" onclick="_cpTab='actividad';openClientProfile('${id}')">
+        💬 Actividad ${(_clNotes[id]||[]).length?`<span style="background:var(--acc-dim2);color:var(--acc);font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px;margin-left:3px">${(_clNotes[id]||[]).length}</span>`:''}
+      </button>
+      <button class="cp-tab${_cpTab==='ordenes'?' on':''}" onclick="_cpTab='ordenes';openClientProfile('${id}')">
+        📦 Órdenes ${active.length?`<span style="background:rgba(255,107,53,.15);color:var(--amber);font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px;margin-left:3px">${active.length}</span>`:''}
+      </button>`:''}
+      <button class="cp-tab${_cpTab==='datos'?' on':''}" onclick="_cpTab='datos';openClientProfile('${id||''}')">
+        ⚙ Datos
+      </button>
+    </div>
+    <div class="cp-body">
+      ${tabContent}
     </div>
   </div>`;
 }
-async function saveClient(id){const d={nombre:$('cf-n').value,empresa:$('cf-e').value,telefono:$('cf-t').value,email:$('cf-m').value,direccion:$('cf-d').value,notas:$('cf-notes').value};try{if(id)await sb('clientes',`id=eq.${id}`,'PATCH',d);else await sb('clientes','','POST',d);await loadAll();toast('Guardado ✓');renderClients();}catch(e){toast('Error');}}
+
+function cpAddNote(cid){
+  const inp=$('cp-note-inp');
+  if(!inp||!inp.value.trim()){toast('Escribe algo primero');return;}
+  if(!cid){toast('Guarda el cliente primero');return;}
+  // read type from select if present
+  const sel=$('cp-note-type');
+  if(sel) _cpNoteType=sel.value;
+  addClNote(cid,_cpNoteType,inp.value);
+  openClientProfile(cid);
+  setTimeout(()=>{ const el=$('cp-note-inp'); if(el)el.focus(); },60);
+}
+function cpDelNote(cid, nid){
+  if(!confirm('¿Eliminar esta nota?'))return;
+  delClNote(cid,nid);
+  openClientProfile(cid);
+}
+function cpMarkPendingCotiz(cid){
+  // Save current textarea content as a note tagged "solicitud" + pendingCotiz flag
+  const inp=$('cp-note-inp');
+  const text=(inp&&inp.value.trim())||'Pendiente de cotizar';
+  if(!cid){toast('Guarda el cliente primero');return;}
+  if(!_clNotes[cid]) _clNotes[cid]=[];
+  _clNotes[cid].push({id:'n'+Date.now(),type:'solicitud',text,ts:new Date().toISOString(),pendingCotiz:true});
+  saveClNotes();
+  toast('Marcado como pendiente de cotizar ✓');
+  openClientProfile(cid);
+}
+function cpOpenPendingCotiz(cid, nid){
+  // Mark the note as resolved and open a new order for this client
+  if(_clNotes[cid]){
+    const n=_clNotes[cid].find(x=>x.id===nid);
+    if(n){ n.pendingCotiz=false; n.cotizOpened=new Date().toISOString(); saveClNotes(); }
+  }
+  openNewOrderForClient(cid);
+}
+function openNewOrderForClient(cid){
+  OF={id:null,numero:'',cliente_id:cid,cliente_nombre:'',status:'cotizacion',fecha_entrega:defaultDelivery(),notas:'',moneda:'MXN',descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
+  const cl=DATA.clientes.find(c=>c.id===cid);
+  if(cl) OF.cliente_nombre=clName(cl);
+  navigate('orders');
+  setTimeout(()=>renderOrderForm(),60);
+}
+async function saveClientFromProfile(id){
+  const d={nombre:$('cf-n').value,empresa:$('cf-e').value,telefono:$('cf-t').value,email:$('cf-m').value,direccion:$('cf-d').value,notas:$('cf-notes').value};
+  try{
+    if(id){ await sb('clientes',`id=eq.${id}`,'PATCH',d); await loadAll(); toast('Guardado ✓'); _cpTab='actividad'; openClientProfile(id); }
+    else { const r=await sb('clientes','','POST',d); await loadAll(); toast('Cliente creado ✓'); _cpTab='actividad'; openClientProfile(r[0].id); }
+  }catch(e){toast('Error: '+e.message);}
+}
+// editClient is now openClientProfile — keeping as alias for any remaining refs
+function editClient(id){ openClientProfile(id||null, id?'actividad':'datos'); }
 async function delClient(id){if(!confirm('¿Eliminar?'))return;try{await sb('clientes',`id=eq.${id}`,'DELETE');await loadAll();renderClients();}catch(e){}}
 
 // ══════════════════════════════════════
@@ -3301,7 +3565,7 @@ let _settingsTab='branding'; // 'branding' | 'theme' | 'categories' | 'data' | '
 
 function renderSettings(tab){
   if(tab)_settingsTab=tab;
-  const tabs=[['branding','Marca'],['theme','Tema'],['categories','Categorías'],['impuestos','Impuestos'],['data','Datos'],['seguridad','Seguridad'],['db','Base de datos']];
+  const tabs=[['branding','Marca'],['theme','Tema'],['categories','Categorías'],['data','Datos'],['seguridad','Seguridad'],['db','Base de datos']];
   const swatches=ACCENT_PRESETS.map(h=>`<div class="swatch${BRAND.accentHex===h?' on':''}" style="background:${h}" data-hex="${h}" onclick="setAccent('${h}')" title="${h}"></div>`).join('');
 
   $('main').innerHTML=`<div class="page page-sm">
@@ -3414,8 +3678,6 @@ function renderSettings(tab){
       <div style="font-size:13px;color:var(--t3);margin-bottom:12px">Sin categorías — agrega las que uses en tu negocio</div>
       <div style="font-size:11px;color:var(--t3);line-height:1.6">Ejemplos: Imprenta, Señalética, Textiles, Servicios, Gran formato...</div>
     </div>`:buildCatList()}`:
-
-    _settingsTab==='impuestos'?renderTaxSettings():
 
     _settingsTab==='data'?`
     <div class="card" style="margin-bottom:8px">
@@ -4685,75 +4947,196 @@ function resetCredsFromSettings(){
   toast('Credenciales restauradas');
   renderSettings('seguridad');
 }
+
 // ════════════════════════════════════════════════════════
-//  DASHBOARD — Urgentes e importantes
+//  DASHBOARD — editable con pins de clientes + cobros pendientes
 // ════════════════════════════════════════════════════════
+const DASH_PINS_KEY = 'craftcrm_dash_pins';
+let _dashPins = []; // array of client ids
+function loadDashPins(){ try{const s=localStorage.getItem(DASH_PINS_KEY);if(s)_dashPins=JSON.parse(s);}catch(e){} }
+function saveDashPins(){ localStorage.setItem(DASH_PINS_KEY,JSON.stringify(_dashPins)); }
+function dashAddPin(cid){ if(!_dashPins.includes(cid)){_dashPins.push(cid);saveDashPins();} renderDashboard(); }
+function dashRemovePin(cid,e){ if(e){e.stopPropagation();} _dashPins=_dashPins.filter(x=>x!==cid);saveDashPins();renderDashboard(); }
+loadDashPins();
+
+const NOTE_CFG = {
+  nota:     {label:'Nota',      icon:'📝', bg:'rgba(77,148,255,.15)',  color:'#4d94ff'},
+  llamada:  {label:'Llamada',   icon:'📞', bg:'rgba(61,220,132,.15)',  color:'#3ddc84'},
+  solicitud:{label:'Solicitud', icon:'📋', bg:'rgba(255,107,53,.15)',  color:'#ff6b35'},
+  cambio:   {label:'Cambio',    icon:'🔄', bg:'rgba(170,119,255,.15)', color:'#aa77ff'},
+  cotizacion:{label:'Cotización',icon:'💰',bg:'rgba(212,255,71,.12)',  color:'#d4ff47'},
+};
+
 function renderDashboard(){
-  const now=new Date();
-  const todayStr=now.toISOString().slice(0,10);
-  const in3=new Date(now);in3.setDate(in3.getDate()+3);
-  const in3Str=in3.toISOString().slice(0,10);
-  const in7=new Date(now);in7.setDate(in7.getDate()+7);
-  const in7Str=in7.toISOString().slice(0,10);
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,10);
+  const in3 = new Date(now); in3.setDate(in3.getDate()+3);
+  const in3Str = in3.toISOString().slice(0,10);
+  const in7 = new Date(now); in7.setDate(in7.getDate()+7);
+  const in7Str = in7.toISOString().slice(0,10);
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
 
-  const active=DATA.ordenes.filter(o=>!['entregada','cancelada'].includes(o.status));
-  const overdue=active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)<todayStr);
-  const todayDue=active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===todayStr);
-  const soon=active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>todayStr&&o.fecha_entrega.slice(0,10)<=in3Str);
-  const thisWeek=active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>in3Str&&o.fecha_entrega.slice(0,10)<=in7Str);
-  const noDate=active.filter(o=>!o.fecha_entrega);
-  const inProd=active.filter(o=>o.status==='en_produccion');
-  const readyToDeliver=active.filter(o=>o.status==='lista');
+  const active = DATA.ordenes.filter(o=>!['entregada','cancelada'].includes(o.status));
+  const overdue = active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)<todayStr);
+  const todayDue = active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===todayStr);
+  const soon = active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>todayStr&&o.fecha_entrega.slice(0,10)<=in3Str);
+  const thisWeek = active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>in3Str&&o.fecha_entrega.slice(0,10)<=in7Str);
+  const readyToDeliver = active.filter(o=>o.status==='lista');
 
-  // Financial stats
-  const monthTotal=DATA.ordenes.filter(o=>{const d=new Date(o.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,o)=>s+(parseFloat(o.total)||0),0);
-  const pendingPayment=active.filter(o=>{const t=parseFloat(o.total||0);const p=parseFloat(o.pagado||0);return t>0&&p<t-0.01;}).reduce((s,o)=>s+(parseFloat(o.total||0)-parseFloat(o.pagado||0)),0);
-  const activeVal=active.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+  // Cobros pendientes: entregadas pero no pagadas del todo
+  const cobroPendiente = DATA.ordenes.filter(o=>{
+    if(o.status!=='entregada') return false;
+    const t=parseFloat(o.total||0), p=parseFloat(o.pagado||0);
+    return t>0 && p<t-0.01;
+  }).sort((a,b)=>b.fecha_entrega?.localeCompare(a.fecha_entrega||'')||0);
 
-  const urgentCard=(o,badge,badgeColor)=>{
-    const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
-    const sc=SC_HEX[o.status]||'#555';
-    const daysLeft=o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
-    return`<div class="order-row" onclick="openEditOrder('${o.id}')" style="border-left:3px solid ${badgeColor};cursor:pointer">
-      <div class="opip" style="background:${sc}"></div>
+  // Financial
+  const monthTotal = DATA.ordenes.filter(o=>{
+    const d=new Date(o.created_at||o.fecha_creacion||Date.now());
+    return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;
+  }).reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+  const pendingCobro = cobroPendiente.reduce((s,o)=>s+(parseFloat(o.total||0)-parseFloat(o.pagado||0)),0);
+  const activeVal = active.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+
+  // ── Urgency row helper
+  const urgRow = (o, color) => {
+    const cl = DATA.clientes.find(c=>c.id===o.cliente_id);
+    const daysLeft = o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
+    const dayLabel = daysLeft===null?'':daysLeft<0?`${Math.abs(daysLeft)}d atrasado`:daysLeft===0?'Hoy':daysLeft===1?'Mañana':`${daysLeft}d`;
+    return `<div class="urg-row" style="color:${color};border-left-color:${color}" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
+      <div class="opip" style="background:${SC_HEX[o.status]||'#555'};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div class="onum">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-          <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;background:${badgeColor}22;color:${badgeColor}">${badge}</span>
-        </div>
-        <div class="ometa">${clName(cl)} · <span style="color:${SC_HEX[o.status]||'#555'}">${SL[o.status]||o.status}</span></div>
+        <div style="font-size:12px;font-weight:700;color:var(--t1)">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+        <div style="font-size:10px;color:var(--t3)">${esc(clName(cl))} · ${esc(SL[o.status]||o.status)}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(parseFloat(o.total||0))}</div>
-        ${daysLeft!==null?`<div style="font-size:9px;color:${badgeColor};font-weight:700">${daysLeft<0?Math.abs(daysLeft)+'d atrasado':daysLeft===0?'Hoy':daysLeft+'d'}</div>`:''}
+        <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(parseFloat(o.total||0))}</div>
+        ${daysLeft!==null?`<div style="font-size:9px;font-weight:800;color:${color}">${dayLabel}</div>`:''}
       </div>
     </div>`;
   };
 
-  const section=(title,orders,badge,color,emptyMsg)=>{
-    if(orders.length===0)return`<div style="margin-bottom:18px">
-      <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:6px">
-        <span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block"></span>${title}
-        <span style="font-size:10px;font-weight:600;color:var(--t3);margin-left:auto">0</span>
+  const urgSection = (title, orders, color, emptyMsg='') => `
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;display:flex;align-items:center;gap:6px">
+        <span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>${title}
+        <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:${orders.length?color+'22':'transparent'};color:${orders.length?color:'var(--t3)'};margin-left:auto">${orders.length}</span>
       </div>
-      <div style="padding:10px 12px;background:var(--s1);border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--t3)">${emptyMsg}</div>
+      ${orders.length===0?`<div style="font-size:11px;color:var(--t3);padding:4px 0">${emptyMsg||'—'}</div>`
+      :orders.map(o=>urgRow(o,color)).join('')}
     </div>`;
-    return`<div style="margin-bottom:18px">
-      <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:6px">
-        <span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block"></span>${title}
-        <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:${color}22;color:${color};margin-left:auto">${orders.length}</span>
+
+  // ── Cobro pendiente row
+  const cobroRow = o => {
+    const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
+    const debe=parseFloat(o.total||0)-parseFloat(o.pagado||0);
+    const entrega=o.fecha_entrega?fmtDateES(o.fecha_entrega):'';
+    const days=o.fecha_entrega?Math.round((now-new Date(o.fecha_entrega))/86400000):null;
+    return `<div class="cobro-row" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:var(--red)">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+        <div style="font-size:10px;color:var(--t3)">${esc(clName(cl))}${entrega?' · Entregó '+entrega:''}</div>
+        ${days!==null&&days>0?`<div style="font-size:10px;font-weight:700;color:var(--red)">${days}d sin cobrar</div>`:''}
       </div>
-      ${orders.map(o=>urgentCard(o,badge,color)).join('')}
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--red)">-$${fmtS(debe)}</div>
+        ${parseFloat(o.pagado)>0?`<div style="font-size:9px;color:var(--t3)">Pagó $${fmtS(parseFloat(o.pagado))}</div>`:''}
+      </div>
     </div>`;
   };
 
-  $('main').innerHTML=`<div class="page" style="max-width:820px">
-    <div class="ph"><span class="ptitle">Dashboard</span>
+  // ── Client pin card
+  const pinCard = cid => {
+    const cl = DATA.clientes.find(c=>c.id===cid);
+    if(!cl) return '';
+    const ini=(cl.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const ords=DATA.ordenes.filter(o=>o.cliente_id===cid);
+    const actOrd=ords.filter(o=>!['entregada','cancelada'].includes(o.status));
+    const notes=getClNotes(cid).slice(0,3);
+    const total=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+    const pendCob=ords.filter(o=>{if(o.status!=='entregada')return false;const t=parseFloat(o.total||0),p=parseFloat(o.pagado||0);return t>0&&p<t-0.01;});
+
+    return `<div class="dash-card">
+      <div class="dash-card-head" onclick="navigate('clients');setTimeout(()=>openClientProfile('${cid}'),60)">
+        <div class="dash-card-avatar">${ini}</div>
+        <div style="flex:1;min-width:0">
+          <div class="dash-card-name">${esc(clName(cl))}</div>
+          <div class="dash-card-sub">${actOrd.length?`${actOrd.length} pendiente${actOrd.length!==1?'s':''}`:esc(cl.empresa||'Sin órdenes activas')}</div>
+        </div>
+        <button class="dash-remove-btn" title="Quitar del dashboard" onclick="dashRemovePin('${cid}',event)">×</button>
+      </div>
+      <div class="dash-card-body">
+        ${pendCob.length?`<div style="margin-bottom:7px">${pendCob.map(o=>{const d=parseFloat(o.total||0)-parseFloat(o.pagado||0);return`<div style="font-size:11px;color:var(--red);font-weight:700;padding:2px 0">⚠ $${fmtS(d)} pendiente de cobro</div>`;}).join('')}</div>`:''}
+        ${actOrd.length?`<div style="margin-bottom:6px">${actOrd.slice(0,3).map(o=>{
+          const sc=SC_HEX[o.status]||'#555';
+          const days=o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
+          return`<div class="dash-ord-row" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60);event.stopPropagation()">
+            <div style="width:5px;height:5px;border-radius:50%;background:${sc};flex-shrink:0"></div>
+            <div style="flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+            <div style="color:${sc};font-size:10px">${esc(SL[o.status]||o.status)}</div>
+            ${days!==null?`<div style="font-size:10px;font-weight:700;color:${days<0?'var(--red)':days<=3?'var(--amber)':'var(--t3)'};flex-shrink:0">${days<0?Math.abs(days)+'d atrás':days===0?'Hoy':days+'d'}</div>`:''}
+          </div>`;}).join('')}
+          ${actOrd.length>3?`<div style="font-size:10px;color:var(--t3);padding-top:3px">+${actOrd.length-3} más</div>`:''}</div>
+        `:''}
+        ${notes.length?`<div>${notes.map(n=>{
+          const cfg=NOTE_CFG[n.type]||NOTE_CFG.nota;
+          const d=new Date(n.ts);
+          const dateStr=d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+          return`<div class="dash-note-row">
+            <span class="dash-note-tag" style="background:${cfg.bg};color:${cfg.color}">${cfg.icon} ${cfg.label}</span>
+            <span style="color:var(--t3);font-size:9px">${dateStr}</span>
+            <div style="margin-top:2px;color:var(--t2)">${esc(n.text.length>80?n.text.slice(0,80)+'…':n.text)}</div>
+            ${n.pendingCotiz?`<div style="margin-top:4px"><button class="pending-badge" onclick="cpOpenPendingCotiz('${cid}','${n.id}');event.stopPropagation()"><span class="dot"></span>PENDIENTE DE COTIZAR</button></div>`:''}
+          </div>`;}).join('')}</div>`
+        :`<div style="font-size:11px;color:var(--t3);padding:4px 0">Sin actividad reciente</div>`}
+        <div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;gap:6px">
+          <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;flex:1" onclick="navigate('clients');setTimeout(()=>openClientProfile('${cid}','actividad'),60)">Ver ficha →</button>
+          <button class="btn btn-acc" style="font-size:10px;padding:3px 10px" onclick="openNewOrderForClient('${cid}')">+ Orden</button>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  // ── Add-pin picker
+  const unpinned = DATA.clientes.filter(c=>!_dashPins.includes(c.id));
+  const addCardHtml = `<div class="dash-add-card" onclick="dashShowPicker()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    Agregar cliente
+  </div>`;
+
+  // ── Picker dropdown (hidden by default, shown via dashShowPicker)
+  const pickerHtml = `<div id="dash-picker" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:300;background:var(--s2);border:1px solid var(--border3);border-radius:var(--r);min-width:260px;max-width:340px;box-shadow:0 16px 48px rgba(0,0,0,.5);overflow:hidden">
+    <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700">Agregar al dashboard</span>
+      <button onclick="document.getElementById('dash-picker').style.display='none'" style="background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:8px;border-bottom:1px solid var(--border)">
+      <input class="inp" id="dash-picker-q" placeholder="Buscar..." oninput="dashFilterPicker(this.value)" style="font-size:12px">
+    </div>
+    <div id="dash-picker-list" style="max-height:260px;overflow-y:auto;padding:6px">
+      ${unpinned.length===0?'<div style="padding:12px;text-align:center;font-size:12px;color:var(--t3)">Todos los clientes ya están en el dashboard</div>'
+      :unpinned.map(c=>{
+        const ini=(c.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+        const actOrd=DATA.ordenes.filter(o=>o.cliente_id===c.id&&!['entregada','cancelada'].includes(o.status)).length;
+        return`<div class="lp-item" style="border-radius:6px" onclick="dashAddPin('${c.id}');document.getElementById('dash-picker').style.display='none'">
+          <div style="width:26px;height:26px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--acc);flex-shrink:0">${ini}</div>
+          <div><div style="font-size:12px;font-weight:600">${esc(clName(c))}</div>
+          <div style="font-size:10px;color:var(--t3)">${esc(c.empresa||'')}${c.empresa&&actOrd?' · ':''}${actOrd?actOrd+' activa'+(actOrd!==1?'s':''):''}</div></div>
+        </div>`;}).join('')}
+    </div>
+  </div>
+  <div id="dash-picker-bg" onclick="document.getElementById('dash-picker').style.display='none';document.getElementById('dash-picker-bg').style.display='none'" style="display:none;position:fixed;inset:0;z-index:299;background:rgba(0,0,0,.4)"></div>`;
+
+  $('main').innerHTML = `<div class="page" style="max-width:none;padding-bottom:40px">
+    ${pickerHtml}
+    <div class="ph" style="padding:20px 26px 0">
+      <span class="ptitle">Dashboard</span>
       <button class="btn btn-acc" onclick="openNewOrder()" style="font-size:12px;padding:6px 14px">+ Nueva orden</button>
     </div>
 
     <!-- KPI strip -->
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:22px">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 26px 0">
       <div class="stat" style="cursor:pointer" onclick="navigate('orders')">
         <div class="stat-val" style="color:var(--c2)">${active.length}</div>
         <div class="stat-key">Órdenes activas</div>
@@ -4762,8 +5145,8 @@ function renderDashboard(){
         <div class="stat-val" style="color:var(--c1)">$${fmtS(monthTotal)}</div>
         <div class="stat-key">Facturado este mes</div>
       </div>
-      <div class="stat" style="${pendingPayment>0?'border-color:rgba(255,107,53,.3)':''}">
-        <div class="stat-val" style="color:${pendingPayment>0?'var(--c3)':'var(--t3)'}">$${fmtS(pendingPayment)}</div>
+      <div class="stat" style="${cobroPendiente.length>0?'border-color:rgba(255,69,69,.35)':''}">
+        <div class="stat-val" style="color:${cobroPendiente.length>0?'var(--red)':'var(--t3)'}">$${fmtS(pendingCobro)}</div>
         <div class="stat-key">Por cobrar</div>
       </div>
       <div class="stat">
@@ -4772,69 +5155,295 @@ function renderDashboard(){
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <!-- Two-col: urgentes + cobros -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 26px 0">
       <div>
-        <div style="font-size:11px;font-weight:800;color:var(--t1);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">🚨 Urgente</div>
-        ${section('Vencidas',overdue,'VENCIDA','var(--red)','✓ Sin órdenes vencidas')}
-        ${section('Entregan hoy',todayDue,'HOY','var(--amber)','Sin entregas para hoy')}
-        ${section('En 3 días',soon,'PRONTO','var(--blue)','Sin entregas los próximos 3 días')}
+        <div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🚨 Urgente</div>
+        ${urgSection('Vencidas',overdue,'var(--red)','✓ Sin órdenes vencidas')}
+        ${urgSection('Entregan hoy',todayDue,'var(--amber)','Sin entregas hoy')}
+        ${urgSection('En 3 días',soon,'#4d94ff','Despejado')}
+        ${urgSection('Listas para entregar',readyToDeliver,'var(--c2)','Sin órdenes listas')}
+        ${thisWeek.length?urgSection('Esta semana',thisWeek,'var(--t2)'):''}
       </div>
       <div>
-        <div style="font-size:11px;font-weight:800;color:var(--t1);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">📋 En seguimiento</div>
-        ${section('Listas para entregar',readyToDeliver,'LISTA','var(--c2)','Sin órdenes listas')}
-        ${section('En producción',inProd,'EN PROD','#aa77ff','Sin órdenes en producción')}
-        ${section('Esta semana',thisWeek,'SEMANA','var(--t2)','Sin más entregas esta semana')}
-        ${noDate.length?section('Sin fecha de entrega',noDate,'SIN FECHA','var(--t3)',''):''}
+        <div style="font-size:10px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">💸 Cobros pendientes${cobroPendiente.length?` <span style="background:rgba(255,69,69,.2);padding:1px 6px;border-radius:8px">${cobroPendiente.length}</span>`:''}</div>
+        ${cobroPendiente.length===0
+          ?`<div style="font-size:12px;color:var(--t3);padding:16px 0">✓ Todo cobrado</div>`
+          :cobroPendiente.map(cobroRow).join('')}
+      </div>
+    </div>
+
+    <!-- Clientes pinneados -->
+    <div style="margin:24px 26px 0">
+      <div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">📌 Clientes seguidos</div>
+      <div class="dash-grid">
+        ${_dashPins.map(pinCard).join('')}
+        ${addCardHtml}
       </div>
     </div>
   </div>`;
 }
 
-// ════════════════════════════════════════════════════════
-//  TAX SETTINGS HELPERS
-// ════════════════════════════════════════════════════════
-function renderTaxSettings(){
-  const taxHtml=TAX_CONFIG.map((t,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s2);border:1px solid var(--border2);border-radius:6px;margin-bottom:6px">
-      <input type="checkbox" ${t.enabled?'checked':''}
-        onchange="TAX_CONFIG[${i}].enabled=this.checked;saveTaxConfig();refreshTotals();renderSettings('impuestos')"
-        style="width:15px;height:15px;cursor:pointer;accent-color:var(--acc)">
-      <input class="inp" value="${esc(t.label)}" placeholder="Nombre (ej: IVA, GST, Tax)"
-        style="flex:1;font-size:12px" maxlength="20"
-        onchange="TAX_CONFIG[${i}].label=this.value.trim();saveTaxConfig()">
-      <div style="display:flex;align-items:center;gap:4px">
-        <input class="inp" type="number" min="0" max="100" step="0.01" value="${t.rate}"
-          style="width:70px;font-size:12px;text-align:right"
-          onchange="TAX_CONFIG[${i}].rate=parseFloat(this.value)||0;saveTaxConfig();refreshTotals()">
-        <span style="font-size:12px;color:var(--t3)">%</span>
-      </div>
-      <button class="btn-icon del" title="Eliminar" onclick="TAX_CONFIG.splice(${i},1);saveTaxConfig();renderSettings('impuestos')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>`).join('');
-
-  return`<div class="card">
-    <div class="lbl" style="margin-bottom:10px">Tipos de impuesto</div>
-    <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.5">
-      Configura los impuestos que aparecen en tus cotizaciones. Activa el que quieras usar. 
-      Si usas USD u otra moneda sin impuesto, pon 0% o deja desactivado.
-    </div>
-    ${taxHtml}
-    <button class="btn btn-ghost" style="font-size:12px;margin-top:4px;width:100%;justify-content:center"
-      onclick="TAX_CONFIG.push({id:'tax_'+Date.now(),label:'Impuesto',rate:0,enabled:false});saveTaxConfig();renderSettings('impuestos')">
-      + Agregar tipo de impuesto
-    </button>
-    <div style="margin-top:12px;padding:10px;background:var(--s3);border-radius:6px;font-size:11px;color:var(--t3)">
-      💡 Solo se aplica el primero que esté activado. El tipo y porcentaje aparecen en cotizaciones, impresión y WhatsApp.
-    </div>
-  </div>`;
+function dashShowPicker(){
+  const bg=document.getElementById('dash-picker-bg');
+  const pk=document.getElementById('dash-picker');
+  if(bg)bg.style.display='block';
+  if(pk){pk.style.display='block';setTimeout(()=>document.getElementById('dash-picker-q')?.focus(),60);}
+}
+function dashFilterPicker(q){
+  const list=document.getElementById('dash-picker-list');
+  if(!list)return;
+  list.querySelectorAll('.lp-item').forEach(el=>{
+    const name=el.textContent.toLowerCase();
+    el.style.display=name.includes(q.toLowerCase())?'':'none';
+  });
 }
 
+
+// ════════════════════════════════════════════════════════
+//  GOOGLE CONTACTS IMPORT
+// ════════════════════════════════════════════════════════
+const GC_CLIENT_ID = '921894159659-f28bl8jcn0h2hdbarosqtltrk6en36do.apps.googleusercontent.com';
+const GC_SCOPE = 'https://www.googleapis.com/auth/contacts.readonly';
+let _gcToken = null;
+let _gcContacts = [];
+let _gcFiltered = [];
+
+function gcImportOpen() {
+  // Show modal immediately, then auth
+  gcShowModal('loading');
+  if (_gcToken) {
+    gcFetchContacts();
+  } else {
+    gcAuth();
+  }
+}
+
+function gcAuth() {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GC_CLIENT_ID,
+    scope: GC_SCOPE,
+    callback: (resp) => {
+      if (resp.error) { gcShowModal('error', resp.error); return; }
+      _gcToken = resp.access_token;
+      gcFetchContacts();
+    },
+  });
+  client.requestAccessToken();
+}
+
+async function gcFetchContacts() {
+  gcShowModal('loading');
+  try {
+    let all = [];
+    let pageToken = '';
+    do {
+      const url = `https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers,organizations&pageSize=1000${pageToken ? '&pageToken=' + pageToken : ''}`;
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + _gcToken } });
+      const data = await res.json();
+      if (data.error) { gcShowModal('error', data.error.message); return; }
+      all = all.concat(data.connections || []);
+      pageToken = data.nextPageToken || '';
+    } while (pageToken);
+
+    _gcContacts = all
+      .map(p => ({
+        resourceName: p.resourceName,
+        nombre: p.names?.[0]?.displayName || '',
+        empresa: p.organizations?.[0]?.name || '',
+        telefono: p.phoneNumbers?.[0]?.value || '',
+        email: p.emailAddresses?.[0]?.value || '',
+      }))
+      .filter(p => p.nombre)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    _gcFiltered = [..._gcContacts];
+    gcShowModal('list');
+  } catch(e) {
+    gcShowModal('error', e.message);
+  }
+}
+
+function gcShowModal(state, msg) {
+  // Remove existing modal
+  document.getElementById('gc-modal')?.remove();
+  document.getElementById('gc-modal-bg')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'gc-modal';
+  modal.className = 'gc-modal';
+
+  if (state === 'loading') {
+    modal.innerHTML = `
+      <div class="gc-modal-bg" onclick="gcClose()"></div>
+      <div class="gc-modal-box" style="align-items:center;justify-content:center;min-height:200px">
+        <div style="text-align:center;padding:40px">
+          <div style="font-size:13px;color:var(--t3);margin-bottom:8px">Cargando contactos de Google...</div>
+          <div style="width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto"></div>
+        </div>
+      </div>`;
+  } else if (state === 'error') {
+    modal.innerHTML = `
+      <div class="gc-modal-bg" onclick="gcClose()"></div>
+      <div class="gc-modal-box">
+        <div class="gc-modal-head">
+          <span class="gc-modal-title">Error</span>
+          <button onclick="gcClose()" style="background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer">×</button>
+        </div>
+        <div class="gc-modal-body" style="padding:24px;text-align:center;color:var(--red)">${msg || 'No se pudo conectar con Google'}</div>
+        <div class="gc-modal-foot">
+          <button class="btn btn-ghost" onclick="gcClose()">Cerrar</button>
+          <button class="btn btn-acc" onclick="gcClose();gcAuth()">Reintentar</button>
+        </div>
+      </div>`;
+  } else if (state === 'list') {
+    const rows = _gcFiltered.map((ct, i) => {
+      const ini = ct.nombre.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+      const alreadyExists = DATA.clientes.some(c =>
+        c.nombre.toLowerCase() === ct.nombre.toLowerCase() ||
+        (ct.email && c.email === ct.email)
+      );
+      return `<div class="gc-contact-row${alreadyExists ? ' already' : ''}">
+        <input type="checkbox" id="gc-cb-${i}" value="${i}" ${alreadyExists ? 'disabled title="Ya existe en el CRM"' : ''}>
+        <div class="gc-avatar">${ini}</div>
+        <div class="gc-info">
+          <div class="gc-name">${esc(ct.nombre)} ${alreadyExists ? '<span style=\"font-size:9px;color:var(--t3);font-weight:600\">(ya existe)</span>' : ''}</div>
+          <div class="gc-sub">${[ct.empresa, ct.telefono, ct.email].filter(Boolean).join(' · ')}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    modal.innerHTML = `
+      <div class="gc-modal-bg" onclick="gcClose()"></div>
+      <div class="gc-modal-box">
+        <div class="gc-modal-head">
+          <span class="gc-modal-title">Importar de Google Contacts</span>
+          <button onclick="gcClose()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;line-height:1">×</button>
+        </div>
+        <div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+          <input class="inp" id="gc-search" placeholder="Buscar contacto..." oninput="gcFilter(this.value)" style="font-size:12px;flex:1">
+          <span style="font-size:10px;color:var(--t3);white-space:nowrap">${_gcFiltered.length} contactos</span>
+        </div>
+        <div style="padding:6px 18px;border-bottom:1px solid var(--border)">
+          <span class="gc-select-all" onclick="gcSelectAll()">Seleccionar todos</span>
+          <span style="color:var(--t3);margin:0 6px">·</span>
+          <span class="gc-select-all" onclick="gcSelectNone()">Deseleccionar</span>
+        </div>
+        <div class="gc-modal-body" id="gc-list" style="padding:8px 10px">
+          ${rows}
+        </div>
+        <div class="gc-modal-foot">
+          <span id="gc-sel-count" style="font-size:11px;color:var(--t3);margin-right:auto;align-self:center">0 seleccionados</span>
+          <button class="btn btn-ghost" onclick="gcClose()">Cancelar</button>
+          <button class="btn btn-acc" onclick="gcImportSelected()">Importar →</button>
+        </div>
+      </div>`;
+
+    // Update counter on checkbox change
+    setTimeout(() => {
+      document.querySelectorAll('#gc-list input[type=checkbox]').forEach(cb => {
+        cb.addEventListener('change', gcUpdateCount);
+      });
+    }, 50);
+  } else if (state === 'success') {
+    modal.innerHTML = `
+      <div class="gc-modal-bg" onclick="gcClose()"></div>
+      <div class="gc-modal-box">
+        <div class="gc-modal-head">
+          <span class="gc-modal-title">¡Importación completa!</span>
+          <button onclick="gcClose()" style="background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer">×</button>
+        </div>
+        <div class="gc-modal-body" style="padding:24px;text-align:center">
+          <div style="font-size:32px;margin-bottom:8px">✓</div>
+          <div style="font-size:14px;font-weight:700;color:var(--c2)">${msg}</div>
+        </div>
+        <div class="gc-modal-foot">
+          <button class="btn btn-acc" onclick="gcClose()">Listo</button>
+        </div>
+      </div>`;
+  }
+
+  document.body.appendChild(modal);
+}
+
+function gcFilter(q) {
+  _gcFiltered = q
+    ? _gcContacts.filter(ct =>
+        ct.nombre.toLowerCase().includes(q.toLowerCase()) ||
+        ct.empresa.toLowerCase().includes(q.toLowerCase())
+      )
+    : [..._gcContacts];
+  const countEl = document.querySelector('.gc-modal-box span[style*="white-space"]');
+  if (countEl) countEl.textContent = _gcFiltered.length + ' contactos';
+  const list = document.getElementById('gc-list');
+  if (!list) return;
+  list.innerHTML = _gcFiltered.map((ct, i) => {
+    const ini = ct.nombre.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const exists = DATA.clientes.some(c => c.nombre.toLowerCase() === ct.nombre.toLowerCase() || (ct.email && c.email === ct.email));
+    return `<div class="gc-contact-row">
+      <input type="checkbox" id="gc-cb-${i}" value="${i}" ${exists ? 'disabled title="Ya existe"' : ''}>
+      <div class="gc-avatar">${ini}</div>
+      <div class="gc-info">
+        <div class="gc-name">${esc(ct.nombre)} ${exists ? '<span style=\"font-size:9px;color:var(--t3)\">(ya existe)</span>' : ''}</div>
+        <div class="gc-sub">${[ct.empresa, ct.telefono, ct.email].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#gc-list input[type=checkbox]').forEach(cb => cb.addEventListener('change', gcUpdateCount));
+}
+
+function gcUpdateCount() {
+  const n = document.querySelectorAll('#gc-list input[type=checkbox]:checked').length;
+  const el = document.getElementById('gc-sel-count');
+  if (el) el.textContent = n + ' seleccionado' + (n !== 1 ? 's' : '');
+}
+
+function gcSelectAll() {
+  document.querySelectorAll('#gc-list input[type=checkbox]:not(:disabled)').forEach(cb => cb.checked = true);
+  gcUpdateCount();
+}
+
+function gcSelectNone() {
+  document.querySelectorAll('#gc-list input[type=checkbox]').forEach(cb => cb.checked = false);
+  gcUpdateCount();
+}
+
+async function gcImportSelected() {
+  const checked = [...document.querySelectorAll('#gc-list input[type=checkbox]:checked')];
+  if (checked.length === 0) { toast('Selecciona al menos un contacto'); return; }
+
+  gcShowModal('loading');
+
+  const toInsert = checked.map(cb => {
+    const ct = _gcFiltered[parseInt(cb.value)];
+    return {
+      nombre: ct.nombre,
+      empresa: ct.empresa || null,
+      telefono: ct.telefono || null,
+      email: ct.email || null,
+    };
+  });
+
+  try {
+    const { error } = await sb('clientes', '', 'POST', toInsert);
+    if (error) throw new Error(error.message || JSON.stringify(error));
+    await loadAll();
+    gcShowModal('success', `${toInsert.length} contacto${toInsert.length !== 1 ? 's' : ''} importado${toInsert.length !== 1 ? 's' : ''} correctamente`);
+    renderClients();
+  } catch(e) {
+    gcShowModal('error', e.message);
+  }
+}
+
+function gcClose() {
+  document.getElementById('gc-modal')?.remove();
+}
 // ── INIT ──
 window.addEventListener('DOMContentLoaded',()=>{
   loadBrand();
   loadUserCats();
-  loadTaxConfig();
+  loadDashPins();
+  loadClNotes();
   checkLock(); // Security: show PIN screen if configured
   connectSb();
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
