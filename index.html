@@ -555,6 +555,174 @@ select.lf-inp{cursor:pointer;}
   .lines-hdr,.line-r{grid-template-columns:1fr 58px 80px 20px;}
   .cal-week-hdr,.cal-row{grid-template-columns:40px repeat(7,1fr);}
 }
+
+/* ══════════════════════════════════════
+   MOBILE LAYOUT — Bottom nav bar system
+   ══════════════════════════════════════ */
+@media(max-width:1023px){
+  /* Hide the side rail entirely on mobile */
+  #rail{ display:none !important; }
+
+  /* App fills full screen */
+  #app{ flex-direction:column; }
+  #main-area{ flex:1; overflow:hidden; }
+  #content-panel{ height:100%; }
+
+  /* Bottom nav bar */
+  #mobile-nav{
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    background:var(--s1); border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-around;
+    padding:0; padding-bottom:env(safe-area-inset-bottom,0px);
+    height:calc(56px + env(safe-area-inset-bottom,0px));
+    flex-shrink:0;
+  }
+  .mnav-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:3px; padding:8px 2px; background:none; border:none;
+    color:var(--t3); font-size:9px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.04em; transition:color .1s; min-width:0;
+  }
+  .mnav-btn svg{ width:20px; height:20px; stroke-width:1.6; flex-shrink:0; }
+  .mnav-btn.on{ color:var(--acc); }
+  .mnav-btn span.mnav-lbl{ font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:52px; }
+
+  /* More menu (overflow items) */
+  #mobile-more-menu{
+    position:fixed; bottom:calc(56px + env(safe-area-inset-bottom,0px)); left:0; right:0;
+    background:var(--s2); border-top:1px solid var(--border3);
+    z-index:199; display:none; flex-direction:column;
+    box-shadow:0 -8px 32px rgba(0,0,0,.4);
+    border-radius:14px 14px 0 0; overflow:hidden;
+  }
+  #mobile-more-menu.open{ display:flex; }
+  .mm-item{
+    display:flex; align-items:center; gap:14px; padding:15px 22px;
+    background:none; border:none; color:var(--t1); font-size:14px; font-weight:600;
+    cursor:pointer; transition:background .1s; text-align:left; border-bottom:1px solid var(--border);
+  }
+  .mm-item:last-child{ border-bottom:none; }
+  .mm-item:hover{ background:var(--s3); }
+  .mm-item svg{ width:18px; height:18px; color:var(--t2); flex-shrink:0; }
+  .mm-item.on{ color:var(--acc); }
+  .mm-item.on svg{ color:var(--acc); }
+  #mm-backdrop{
+    position:fixed; inset:0; z-index:198; background:rgba(0,0,0,.45);
+    display:none;
+  }
+  #mm-backdrop.open{ display:block; }
+
+  /* Push content above bottom nav */
+  #main{
+    padding-bottom:calc(56px + env(safe-area-inset-bottom,0px) + 6px) !important;
+  }
+
+  /* ── Mobile calendar: agenda / list view ── */
+  .cal-mobile-wrap{
+    display:flex; flex-direction:column; height:100%; overflow:hidden;
+  }
+  .cal-mobile-toolbar{
+    display:flex; align-items:center; gap:8px; padding:12px 16px 10px;
+    border-bottom:1px solid var(--border); flex-shrink:0; background:var(--s1);
+  }
+  .cal-mobile-title{ font-size:14px; font-weight:700; flex:1; }
+  .cal-mobile-tabs{
+    display:flex; gap:0; padding:0 16px; background:var(--s1);
+    border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .cal-mtab{
+    flex:1; padding:9px 0; background:none; border:none;
+    font-size:11px; font-weight:700; color:var(--t3); cursor:pointer;
+    border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .1s;
+    text-transform:uppercase; letter-spacing:.04em;
+  }
+  .cal-mtab.on{ color:var(--acc); border-bottom-color:var(--acc); }
+  .cal-mobile-body{ flex:1; overflow-y:auto; }
+
+  /* Mini month strip (compact grid) */
+  .cal-mini-strip{
+    padding:8px 12px;
+    background:var(--s1);
+    border-bottom:1px solid var(--border);
+  }
+  .cal-mini-strip-hdr{
+    display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:3px;
+  }
+  .cal-mini-strip-hdr span{
+    font-size:9px; color:var(--t3); font-weight:700; text-align:center; padding:2px 0;
+  }
+  .cal-mini-strip-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .cal-mini-day{
+    aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+    border-radius:50%; font-size:11px; font-weight:500; cursor:pointer;
+    position:relative; transition:background .1s;
+  }
+  .cal-mini-day:hover{ background:var(--s3); }
+  .cal-mini-day.today{ color:var(--acc); font-weight:800; }
+  .cal-mini-day.selected{ background:var(--acc); color:#080808; font-weight:800; }
+  .cal-mini-day.has-orders::after{
+    content:''; position:absolute; bottom:1px; left:50%; transform:translateX(-50%);
+    width:4px; height:4px; border-radius:50%; background:var(--acc); opacity:.7;
+  }
+  .cal-mini-day.selected::after{ background:#080808; }
+
+  /* Agenda list */
+  .cal-agenda-day{
+    border-bottom:1px solid var(--border); padding:0;
+  }
+  .cal-agenda-day-hdr{
+    display:flex; align-items:center; gap:10px; padding:10px 16px 6px;
+    position:sticky; top:0; background:var(--bg); z-index:1;
+  }
+  .cal-agenda-day-num{
+    width:32px; height:32px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:13px; font-weight:700; flex-shrink:0;
+    color:var(--t3); background:var(--s2);
+  }
+  .cal-agenda-day-num.today{ background:var(--acc); color:#080808; }
+  .cal-agenda-day-label{ font-size:12px; font-weight:600; color:var(--t2); }
+  .cal-agenda-day-label.today{ color:var(--t1); font-weight:700; }
+  .cal-agenda-empty{ padding:6px 16px 10px; font-size:11px; color:var(--t3); }
+  .cal-agenda-ord{
+    display:flex; align-items:center; gap:10px; padding:9px 16px 9px 58px;
+    cursor:pointer; transition:background .1s; border-top:1px solid var(--border);
+  }
+  .cal-agenda-ord:hover{ background:var(--s2); }
+  .cal-agenda-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .cal-agenda-info{ flex:1; min-width:0; }
+  .cal-agenda-num{ font-size:11px; font-weight:700; font-family:'DM Mono',monospace; color:var(--t2); }
+  .cal-agenda-client{ font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cal-agenda-total{ font-size:12px; font-weight:700; font-family:'DM Mono',monospace; flex-shrink:0; }
+
+  /* Kanban mobile: horizontal scroll with compact columns */
+  .kanban-wrap{ padding:12px; gap:8px; }
+  .kanban-col{ flex:0 0 170px; }
+  .kanban-card{ padding:8px 9px; }
+
+  /* Taller mobile */
+  .taller-wrap{ padding:12px; gap:8px; }
+  .taller-col{ flex:0 0 200px; }
+
+  /* Order form improvements */
+  .g2{ grid-template-columns:1fr; }
+  .of-wrap{ padding:12px 14px; }
+
+  /* Client profile mobile tabs */
+  .cp-tabs{ padding:0 16px; overflow-x:auto; }
+  .cp-body{ padding:14px 16px; }
+
+  /* Touch-friendly tap targets */
+  .btn{ min-height:40px; }
+  .inp{ min-height:40px; }
+  .order-row,.list-row{ min-height:52px; }
+
+  /* Stat grid 2-col on mobile */
+  .stats{ grid-template-columns:1fr 1fr; }
+  .stat-val{ font-size:17px; }
+
+  /* Page padding account for bottom nav */
+  .page{ padding:14px 16px; }
+}
 @media(min-width:1024px){
   .of-wrap{max-width:none;}
   .back-btn.no-desktop{display:none;}
@@ -787,6 +955,55 @@ select.lf-inp{cursor:pointer;}
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- ══ MOBILE BOTTOM NAV ══ -->
+<nav id="mobile-nav" style="display:none">
+  <button class="mnav-btn on" id="mnav-orders" onclick="navigate('orders');mnavSelect('orders')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    <span class="mnav-lbl">Órdenes</span>
+  </button>
+  <button class="mnav-btn" id="mnav-clients" onclick="navigate('clients');mnavSelect('clients')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    <span class="mnav-lbl">Clientes</span>
+  </button>
+  <button class="mnav-btn" id="mnav-calendar" onclick="navigate('calendar');mnavSelect('calendar')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span class="mnav-lbl">Calendario</span>
+  </button>
+  <button class="mnav-btn" id="mnav-kanban" onclick="navigate('kanban');mnavSelect('kanban')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+    <span class="mnav-lbl">Producción</span>
+  </button>
+  <button class="mnav-btn" id="mnav-more" onclick="toggleMobileMore()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+    <span class="mnav-lbl">Más</span>
+  </button>
+</nav>
+
+<!-- More menu overlay -->
+<div id="mm-backdrop" onclick="closeMobileMore()"></div>
+<div id="mobile-more-menu">
+  <button class="mm-item" id="mm-dashboard" onclick="closeMobileMore();navigate('dashboard');mnavSelect('dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+    Dashboard
+  </button>
+  <button class="mm-item" id="mm-taller" onclick="closeMobileMore();navigate('taller');mnavSelect('taller')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+    Taller
+  </button>
+  <button class="mm-item" id="mm-products" onclick="closeMobileMore();navigate('products');mnavSelect('products')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Productos
+  </button>
+  <button class="mm-item" id="mm-suppliers" onclick="closeMobileMore();navigate('suppliers');mnavSelect('suppliers')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Proveedores
+  </button>
+  <button class="mm-item" id="mm-settings" onclick="closeMobileMore();navigate('settings');mnavSelect('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Ajustes
+  </button>
+</div>
 <div id="lock-screen" style="display:none">
   <div class="lock-box">
     <div class="lock-logo">
@@ -1147,7 +1364,11 @@ function navigate(page){
   _lpSelectedId=null;
   ['orders','dashboard','kanban','taller','calendar','products','clients','suppliers','settings'].forEach(p=>$(`rb-${p}`)?.classList.toggle('on',p===page));
   lpHide();dpHide();ctxClear();
+  // Mobile nav sync
+  if(isMobile()) mnavSelect(page);
   if(!sbConn&&page!=='settings'){renderSetup();return;}
+  // Use mobile calendar on small screens
+  if(page==='calendar'&&isMobile()){renderCalendarMobile();return;}
   ({orders:renderOrders,dashboard:renderDashboard,kanban:renderKanban,taller:renderTaller,calendar:renderCalendar,products:renderProducts,clients:renderClients,suppliers:renderSuppliers,settings:renderSettings}[page]||renderOrders)();
 }
 
@@ -5438,7 +5659,199 @@ async function gcImportSelected() {
 function gcClose() {
   document.getElementById('gc-modal')?.remove();
 }
-// ── INIT ──
+// ══ MOBILE NAV ══
+function isMobile(){ return window.innerWidth < 1024; }
+
+function initMobileNav(){
+  const nav = document.getElementById('mobile-nav');
+  if(!nav) return;
+  nav.style.display = isMobile() ? 'flex' : 'none';
+}
+
+function mnavSelect(page){
+  if(!isMobile()) return;
+  // Clear all active states
+  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.mm-item').forEach(b => b.classList.remove('on'));
+  // Primary nav items
+  const primary = ['orders','clients','calendar','kanban'];
+  if(primary.includes(page)){
+    const el = document.getElementById('mnav-' + page);
+    if(el) el.classList.add('on');
+  } else {
+    // In "more" items — highlight the more button
+    const moreBtn = document.getElementById('mnav-more');
+    if(moreBtn) moreBtn.classList.add('on');
+    const mmEl = document.getElementById('mm-' + page);
+    if(mmEl) mmEl.classList.add('on');
+  }
+}
+
+function toggleMobileMore(){
+  const menu = document.getElementById('mobile-more-menu');
+  const bd = document.getElementById('mm-backdrop');
+  if(!menu || !bd) return;
+  const isOpen = menu.classList.contains('open');
+  if(isOpen){ closeMobileMore(); } else {
+    menu.classList.add('open');
+    bd.classList.add('open');
+  }
+}
+
+function closeMobileMore(){
+  document.getElementById('mobile-more-menu')?.classList.remove('open');
+  document.getElementById('mm-backdrop')?.classList.remove('open');
+}
+
+// ══ MOBILE CALENDAR ══
+let _mCalTab = 'agenda'; // 'agenda' | 'month'
+let _mCalSelectedDate = null;
+
+function renderCalendarMobile(){
+  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const today = new Date();
+  const todayStr = isoDate(today);
+
+  // If day view is active, use existing renderDayView
+  if(CAL.dayView){ renderDayView(CAL.dayView); return; }
+
+  if(_mCalTab === 'month'){
+    // Month grid — compact, tap to go to day view
+    $('main').innerHTML = `<div class="cal-mobile-wrap">
+      <div class="cal-mobile-toolbar">
+        <button class="btn btn-ghost" style="padding:6px 10px" onclick="calNav(-1)">‹</button>
+        <span class="cal-mobile-title">${months[CAL.month]} ${CAL.year}</span>
+        <button class="btn btn-ghost" style="padding:6px 10px" onclick="calNav(1)">›</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="CAL.year=new Date().getFullYear();CAL.month=new Date().getMonth();CAL.dayView=null;renderCalendarMobile()">Hoy</button>
+      </div>
+      <div class="cal-mobile-tabs">
+        <button class="cal-mtab" onclick="_mCalTab='agenda';renderCalendarMobile()">Agenda</button>
+        <button class="cal-mtab on" onclick="_mCalTab='month';renderCalendarMobile()">Mes</button>
+      </div>
+      <div class="cal-mobile-body" style="padding:12px">
+        ${buildMobileMonthGrid()}
+        <button class="btn btn-acc" onclick="openNewOrder()" style="width:100%;justify-content:center;margin-top:14px;font-size:13px">+ Nueva orden</button>
+      </div>
+    </div>`;
+    // Tap on day cell -> day view
+    document.querySelectorAll('[data-mdate]').forEach(el=>{
+      el.addEventListener('click', ()=>{ CAL.dayView=el.dataset.mdate; renderDayView(el.dataset.mdate); });
+    });
+    return;
+  }
+
+  // AGENDA view — show next 30 days with orders
+  const agendaDays = [];
+  const start = new Date(CAL.year, CAL.month, 1);
+  // show 60 days from today
+  for(let i=0; i<60; i++){
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    agendaDays.push(isoDate(d));
+  }
+
+  let agendaHtml = '';
+  let hasAny = false;
+  agendaDays.forEach(ds => {
+    const ords = DATA.ordenes.filter(o => o.fecha_entrega && o.fecha_entrega.slice(0,10) === ds);
+    const d = new Date(ds + 'T12:00:00');
+    const isToday = ds === todayStr;
+    const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const dayName = dayNames[d.getDay()];
+    const dayNum = d.getDate();
+    const monthShort = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][d.getMonth()];
+
+    if(ords.length === 0 && !isToday) return; // skip empty days unless today
+    hasAny = true;
+
+    agendaHtml += `<div class="cal-agenda-day">
+      <div class="cal-agenda-day-hdr">
+        <div class="cal-agenda-day-num${isToday?' today':''}">
+          ${dayNum}
+        </div>
+        <div>
+          <div class="cal-agenda-day-label${isToday?' today':''}">${dayName}, ${monthShort}</div>
+          ${ords.length>0?`<div style="font-size:10px;color:var(--t3)">${ords.length} entrega${ords.length!==1?'s':''}</div>`:''}
+        </div>
+        <button class="btn btn-ghost" onclick="openNewOrderForDate('${ds}')" style="margin-left:auto;font-size:11px;padding:4px 10px">+ Orden</button>
+      </div>
+      ${ords.length===0
+        ? (isToday ? `<div class="cal-agenda-empty">Sin entregas hoy</div>` : '')
+        : ords.map(o=>{
+            const cl = DATA.clientes.find(c=>c.id===o.cliente_id);
+            const sc = SC_HEX[o.status]||'#555';
+            const total = parseFloat(o.total||0);
+            return `<div class="cal-agenda-ord" onclick="openEditOrder('${o.id}')">
+              <div class="cal-agenda-dot" style="background:${sc}"></div>
+              <div class="cal-agenda-info">
+                <div class="cal-agenda-num">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+                <div class="cal-agenda-client">${clName(cl)}</div>
+              </div>
+              <div>
+                <div class="cal-agenda-total" style="color:${sc}">$${fmtS(total)}</div>
+                <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:${sc};text-align:right">${SL[o.status]||o.status}</div>
+              </div>
+            </div>`;
+          }).join('')}
+    </div>`;
+  });
+
+  $('main').innerHTML = `<div class="cal-mobile-wrap">
+    <div class="cal-mobile-toolbar">
+      <span class="cal-mobile-title">Agenda</span>
+      <button class="btn btn-acc" onclick="openNewOrder()" style="font-size:12px;padding:6px 12px">+ Nueva</button>
+    </div>
+    <div class="cal-mobile-tabs">
+      <button class="cal-mtab on" onclick="_mCalTab='agenda';renderCalendarMobile()">Agenda</button>
+      <button class="cal-mtab" onclick="_mCalTab='month';renderCalendarMobile()">Mes</button>
+    </div>
+    <div class="cal-mobile-body">
+      ${hasAny ? agendaHtml : '<div style="padding:40px 16px;text-align:center;color:var(--t3);font-size:13px">Sin entregas próximas</div>'}
+    </div>
+  </div>`;
+}
+
+function buildMobileMonthGrid(){
+  const today = new Date();
+  const todayStr = isoDate(today);
+  const year = CAL.year, month = CAL.month;
+  const first = new Date(year, month, 1);
+  const startDow = (first.getDay()+6)%7;
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const days = ['L','M','X','J','V','S','D'];
+
+  // Build set of dates that have orders
+  const orderDates = new Set();
+  DATA.ordenes.forEach(o=>{
+    if(o.fecha_entrega && !['entregada','cancelada'].includes(o.status)){
+      orderDates.add(o.fecha_entrega.slice(0,10));
+    }
+  });
+
+  let hdr = `<div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px">`;
+  days.forEach(d => hdr += `<div style="font-size:10px;color:var(--t3);font-weight:700;text-align:center;padding:4px 0">${d}</div>`);
+  hdr += '</div>';
+
+  let grid = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
+  for(let i=0;i<startDow;i++) grid += `<div></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = ds===todayStr;
+    const hasOrds = orderDates.has(ds);
+    const cnt = DATA.ordenes.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===ds&&!['entregada','cancelada'].includes(o.status)).length;
+    grid += `<div class="cal-mini-day${isToday?' today':''}${hasOrds?' has-orders':''}" data-mdate="${ds}"
+      style="position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;font-size:12px;cursor:pointer;
+             ${isToday?'background:var(--acc);color:#080808;font-weight:800;':''}">
+      ${d}
+      ${hasOrds&&!isToday?`<span style="position:absolute;bottom:1px;width:4px;height:4px;border-radius:50%;background:var(--acc);opacity:.8"></span>`:''}
+      ${hasOrds&&isToday?`<span style="position:absolute;bottom:1px;width:4px;height:4px;border-radius:50%;background:#080808;opacity:.6"></span>`:''}
+    </div>`;
+  }
+  grid += '</div>';
+  return hdr + grid;
+}
+
+// ══ INIT ══
 window.addEventListener('DOMContentLoaded',()=>{
   loadBrand();
   loadUserCats();
@@ -5446,6 +5859,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   loadClNotes();
   checkLock(); // Security: show PIN screen if configured
   connectSb();
+  initMobileNav();
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
   // Re-render on breakpoint change
   let _wasDesktop=isDesktop();
@@ -5453,6 +5867,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     clearTimeout(window._rzt);
     window._rzt=setTimeout(()=>{
       const nowDesktop=isDesktop();
+      initMobileNav();
       if(nowDesktop!==_wasDesktop){_wasDesktop=nowDesktop;navigate(curPage);}
     },200);
   });
