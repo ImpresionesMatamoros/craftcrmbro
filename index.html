@@ -1992,7 +1992,7 @@ const LF = {
     if (!line) return;
     line.precio_manual = val === '' ? null : parseFloat(val) || 0;
     line.subtotal = val === '' 
-      ? (LINE_STRATEGIES[line.multiplier] || LINE_STRATEGIES.standard).calcSubtotal(line)
+      ? ((LINE_STRATEGIES[line.multiplier]||LINE_STRATEGIES.standard).calcSubtotal?.(line) ?? (parseFloat(line.qty)||1)*(parseFloat(line.price)||0))
       : parseFloat(val) || 0;
     LF._refreshLineSubtotal(i);
     refreshTotals();
@@ -2063,7 +2063,7 @@ const LF = {
 
 // ── Render a single line card ──────────────────────────────────
 function buildLine(l, i) {
-  const strategy = LINE_STRATEGIES[l.multiplier] || LINE_STRATEGIES.standard;
+  const strategy = LINE_STRATEGIES[l.multiplier] || LINE_STRATEGIES.standard; // safe
   const multiplierBtns = Object.entries(LINE_STRATEGIES).map(([key, s]) => `
     <button class="mul-btn${l.multiplier===key?' on':''}"
       onclick="LF.switchMultiplier(${i},'${key}')"
@@ -2365,8 +2365,8 @@ function buildTotalsHTML(tot){
       <span style="font-family:'DM Mono',monospace;color:${tot.disc>0?'var(--red)':'var(--t3)'}">${tot.disc>0?'−$'+fmt(tot.disc):'—'}</span>
     </div>
     <div class="tot-row">
-      <span><button class="iva-btn${OF.iva?' on':''}" onclick="OF.iva=!OF.iva;refreshTotals()">${OF.iva?'✓ ':''} ${getActiveTaxLabel()} ${getActiveTaxRate()>0?getActiveTaxRate()+'%':''}</button></span>
-      <span style="font-family:'DM Mono',monospace;color:${OF.iva?'var(--t1)':'var(--t3)'}">${OF.iva?'$'+fmt(tot.iva):'—'}</span>
+      <span><button class="iva-btn${OF.iva?' on':''}" id="iva-toggle-btn">${OF.iva?'✓ ':''} ${getActiveTaxLabel()} ${getActiveTaxRate()>0?getActiveTaxRate()+'%':''}</button></span>
+      <span id="iva-amount" style="font-family:'DM Mono',monospace;color:${OF.iva?'var(--t1)':'var(--t3)'}">${OF.iva?'$'+fmt(tot.iva):'—'}</span>
     </div>
     <div class="tot-total"><span>Total</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.total)}&nbsp;${OF.moneda}</span></div>`;
 }
@@ -2375,7 +2375,12 @@ function refreshTotals(){
   OF.lines.forEach(l=>{
     if(l.precio_manual===null||l.precio_manual===undefined){
       const strat=LINE_STRATEGIES[l.multiplier]||LINE_STRATEGIES.standard;
-      l.subtotal=strat.calcSubtotal(l);
+      if(strat&&typeof strat.calcSubtotal==='function'){
+        l.subtotal=strat.calcSubtotal(l);
+      } else {
+        // Fallback: qty * price
+        l.subtotal=(parseFloat(l.qty)||1)*(parseFloat(l.price)||0);
+      }
     }
     // Update the inline subtotal span without re-rendering the whole line
     const span=document.getElementById('lsub-'+OF.lines.indexOf(l));
@@ -2385,7 +2390,10 @@ function refreshTotals(){
     }
   });
   const tot=calcTotals();
-  const tp=$('totals-panel');if(tp)tp.innerHTML=buildTotalsHTML(tot);
+  const tp=$('totals-panel');if(tp){
+    tp.innerHTML=buildTotalsHTML(tot);
+
+  }
   const pp=$('pay-panel');if(pp){
     pp.innerHTML=buildPayHTML(tot.total);
     if(_payOpen){
@@ -2393,6 +2401,7 @@ function refreshTotals(){
       if(pb)pb.style.display='block';
       if(pc)pc.style.transform='rotate(180deg)';
     }
+
   }
 }
 
@@ -2426,7 +2435,7 @@ function buildPayHTML(total){
           <option value="tarjeta">Tarjeta</option><option value="cheque">Cheque</option>
         </select>
         <input class="inp" id="pay-nota" placeholder="Nota" style="font-size:12px;flex:1;min-width:80px" onkeydown="if(event.key==='Enter')addPago()">
-        <button class="btn btn-ghost" onclick="addPago()" style="flex-shrink:0;padding:6px 10px">+ Pago</button>
+        <button class="btn btn-ghost" id="pay-add-btn" style="flex-shrink:0;padding:6px 10px">+ Pago</button>
       </div>
       ${!isPaid&&balance>0?`<div class="pay-shortcuts">
         <div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 14px;margin-bottom:4px">Cobrar todo ($${fmt(balance)})</div>
@@ -2921,7 +2930,7 @@ function whatsappOrder() {
   const cl = DATA.clientes.find(c => c.id === OF.cliente_id);
   const tot = calcTotals();
   const lines = OF.lines.map(l => {
-    const strat = LINE_STRATEGIES[l.multiplier] || LINE_STRATEGIES.standard;
+    const strat = (LINE_STRATEGIES[l.multiplier] || LINE_STRATEGIES.standard);
     let detail = '';
     if (l.multiplier === 'dimensional') detail = ` (${l.ancho}×${l.alto}${l.unidad_dim})`;
     else if (l.multiplier === 'peso_vol') detail = ` (${l.medida} ${l.unidad_medida})`;
@@ -5512,6 +5521,24 @@ function renderTaxSettings(){
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded',()=>{
+
+// ── Event delegation for dynamically rebuilt panels ──────────────────────────
+document.addEventListener('click', function(e){
+  const tgt = e.target.closest('button');
+  if(!tgt) return;
+  if(tgt.id === 'iva-toggle-btn'){
+    e.stopPropagation();
+    OF.iva = !OF.iva;
+    refreshTotals();
+    return;
+  }
+  if(tgt.id === 'pay-add-btn'){
+    e.stopPropagation();
+    addPago();
+    return;
+  }
+});
+
   loadBrand();
   loadUserCats();
   loadTaxConfig();
