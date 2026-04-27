@@ -5648,7 +5648,7 @@ async function doCreateSquareInvoice() {
     statusEl.textContent = msg;
   };
 
-  const SQ = (path, method, body) => fetch(`/.netlify/functions/square-proxy/v2${path}`, {
+  const SQ = (path, method, body) => fetch(`/api/square/v2${path}`, {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
