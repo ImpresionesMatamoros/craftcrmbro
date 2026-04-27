@@ -5528,20 +5528,16 @@ function renderTaxSettings(){
 // ════════════════════════════════════════════════════════
 
 function sendToSquare() {
-  // Check if Square access token is configured
-  const sqToken = localStorage.getItem('sq_access_token') || '';
   const sqLocationId = localStorage.getItem('sq_location_id') || '';
-
-  if (!sqToken || !sqLocationId) {
+  if (!sqLocationId) {
     showSquareSetupModal();
     return;
   }
-  buildSquareInvoice(sqToken, sqLocationId);
+  buildSquareInvoice(sqLocationId);
 }
 
 function showSquareSetupModal() {
   closeModal();
-  const sqToken = localStorage.getItem('sq_access_token') || '';
   const sqLocationId = localStorage.getItem('sq_location_id') || '';
 
   const o = document.createElement('div');
@@ -5551,23 +5547,13 @@ function showSquareSetupModal() {
       <div style="width:32px;height:32px;background:#006aff;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><rect x="2" y="2" width="20" height="20" rx="4"/><rect x="7" y="7" width="10" height="10" rx="1.5" fill="#006aff"/></svg>
       </div>
-      <div class="modal-title" style="margin:0">Conectar con Square</div>
+      <div class="modal-title" style="margin:0">Configurar Square</div>
     </div>
-    <div class="modal-sub" style="margin-bottom:16px">Ingresa tus credenciales de Square para crear facturas directamente desde CraftCRM. Puedes obtenerlas en <a href="https://developer.squareup.com/apps" target="_blank" style="color:var(--c4)">developer.squareup.com</a></div>
+    <div class="modal-sub" style="margin-bottom:16px">El Access Token vive seguro en las variables de entorno de Netlify. Solo necesitas tu <strong style="color:var(--t1)">Location ID</strong>, que puedes encontrar en el <a href="https://squareup.com/dashboard/locations" target="_blank" style="color:var(--c4)">Dashboard de Square → Locations</a>.</div>
 
-    <div class="fld">
-      <div class="lbl">Access Token</div>
-      <input class="inp" id="sq-token" type="password" placeholder="EAAAl..." value="${esc(sqToken)}" style="font-family:'DM Mono',monospace;font-size:11px">
-      <div style="font-size:10px;color:var(--t3);margin-top:3px">Tu Access Token de la API de Square (Sandbox o Producción)</div>
-    </div>
     <div class="fld" style="margin-bottom:0">
       <div class="lbl">Location ID</div>
-      <input class="inp" id="sq-location" placeholder="LXXXXXXXXXXXXXXXXX" value="${esc(sqLocationId)}" style="font-family:'DM Mono',monospace;font-size:11px">
-      <div style="font-size:10px;color:var(--t3);margin-top:3px">El ID de tu sucursal en Square. Se obtiene en Locations del Dashboard.</div>
-    </div>
-
-    <div style="background:var(--s3);border-radius:6px;padding:10px 12px;margin-top:12px;font-size:11px;color:var(--t3);line-height:1.6">
-      💡 Las credenciales se guardan solo en este dispositivo (localStorage). Nunca se envían a ningún servidor externo salvo la API de Square.
+      <input class="inp" id="sq-location" placeholder="LXXXXXXXXXXXXXXXXX" value="${esc(sqLocationId)}" style="font-family:'DM Mono',monospace;font-size:12px">
     </div>
 
     <div style="display:flex;gap:8px;margin-top:14px">
@@ -5577,22 +5563,19 @@ function showSquareSetupModal() {
   </div>`;
   o.onclick = e => { if (e.target === o) closeModal(); };
   document.body.appendChild(o);
-  setTimeout(() => document.getElementById('sq-token')?.focus(), 60);
+  setTimeout(() => document.getElementById('sq-location')?.focus(), 60);
 }
 
 function saveSquareCreds() {
-  const token = document.getElementById('sq-token')?.value?.trim();
   const location = document.getElementById('sq-location')?.value?.trim();
-  if (!token) { toast('Ingresa el Access Token'); return; }
   if (!location) { toast('Ingresa el Location ID'); return; }
-  localStorage.setItem('sq_access_token', token);
   localStorage.setItem('sq_location_id', location);
   closeModal();
-  toast('Credenciales guardadas ✓');
-  setTimeout(() => buildSquareInvoice(token, location), 200);
+  toast('Location ID guardado ✓');
+  setTimeout(() => buildSquareInvoice(location), 200);
 }
 
-async function buildSquareInvoice(sqToken, sqLocationId) {
+async function buildSquareInvoice(sqLocationId) {
   // Validate we have what we need
   if (!OF.lines.length) { toast('Agrega al menos un producto'); return; }
 
@@ -5645,12 +5628,12 @@ async function buildSquareInvoice(sqToken, sqLocationId) {
   document.body.appendChild(o);
 
   // Store context for doCreateSquareInvoice
-  window._sqCtx = { sqToken, sqLocationId, tot, cl, orderNum };
+  window._sqCtx = { sqLocationId, tot, cl, orderNum };
 }
 
 async function doCreateSquareInvoice() {
-  const { sqToken, sqLocationId, tot, cl, orderNum } = window._sqCtx || {};
-  if (!sqToken) { toast('Error: sin credenciales'); return; }
+  const { sqLocationId, tot, cl, orderNum } = window._sqCtx || {};
+  if (!sqLocationId) { toast('Error: sin Location ID'); return; }
 
   const confirmBtn = document.getElementById('sq-confirm-btn');
   const statusEl = document.getElementById('sq-status');
@@ -5665,17 +5648,19 @@ async function doCreateSquareInvoice() {
     statusEl.textContent = msg;
   };
 
+  const SQ = (path, method, body) => fetch(`/.netlify/functions/square-proxy/v2${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
   try {
     // Step 1: Create or find customer in Square
     let squareCustomerId = null;
     if (cl?.email || cl?.nombre) {
       try {
         const searchBody = { query: { filter: { email_address: { exact: cl.email || undefined } } } };
-        const searchRes = await fetch('https://connect.squareup.com/v2/customers/search', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${sqToken}`, 'Content-Type': 'application/json', 'Square-Version': '2024-01-18' },
-          body: JSON.stringify(cl.email ? searchBody : { query: {} })
-        });
+        const searchRes = await SQ('/customers/search', 'POST', cl.email ? searchBody : { query: {} });
         const searchData = await searchRes.json();
         const existingCustomer = searchData.customers?.find(c =>
           (cl.email && c.email_address === cl.email) ||
@@ -5684,19 +5669,14 @@ async function doCreateSquareInvoice() {
         if (existingCustomer) {
           squareCustomerId = existingCustomer.id;
         } else {
-          // Create new customer
           const nameParts = (cl.nombre || 'Cliente').split(' ');
-          const createRes = await fetch('https://connect.squareup.com/v2/customers', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${sqToken}`, 'Content-Type': 'application/json', 'Square-Version': '2024-01-18' },
-            body: JSON.stringify({
-              given_name: nameParts[0] || cl.nombre,
-              family_name: nameParts.slice(1).join(' ') || undefined,
-              email_address: cl.email || undefined,
-              phone_number: cl.telefono || undefined,
-              company_name: cl.empresa || undefined,
-              idempotency_key: `craftcrm-cust-${cl.id || Date.now()}`
-            })
+          const createRes = await SQ('/customers', 'POST', {
+            given_name: nameParts[0] || cl.nombre,
+            family_name: nameParts.slice(1).join(' ') || undefined,
+            email_address: cl.email || undefined,
+            phone_number: cl.telefono || undefined,
+            company_name: cl.empresa || undefined,
+            idempotency_key: `craftcrm-cust-${cl.id || Date.now()}`
           });
           const createData = await createRes.json();
           squareCustomerId = createData.customer?.id;
@@ -5747,11 +5727,7 @@ async function doCreateSquareInvoice() {
       }
     };
 
-    const orderRes = await fetch('https://connect.squareup.com/v2/orders', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${sqToken}`, 'Content-Type': 'application/json', 'Square-Version': '2024-01-18' },
-      body: JSON.stringify(orderPayload)
-    });
+    const orderRes = await SQ('/orders', 'POST', orderPayload);
     const orderData = await orderRes.json();
 
     if (!orderRes.ok || orderData.errors) {
@@ -5783,11 +5759,7 @@ async function doCreateSquareInvoice() {
       }
     };
 
-    const invRes = await fetch('https://connect.squareup.com/v2/invoices', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${sqToken}`, 'Content-Type': 'application/json', 'Square-Version': '2024-01-18' },
-      body: JSON.stringify(invoicePayload)
-    });
+    const invRes = await SQ('/invoices', 'POST', invoicePayload);
     const invData = await invRes.json();
 
     if (!invRes.ok || invData.errors) {
