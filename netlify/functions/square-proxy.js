@@ -26,8 +26,14 @@ export const handler = async (event) => {
     ? 'https://connect.squareupsandbox.com'
     : 'https://connect.squareup.com';
 
+  const fullUrl = `${baseUrl}${sqPath}`;
+  console.log('SQUARE_SANDBOX:', process.env.SQUARE_SANDBOX);
+  console.log('isSandbox:', isSandbox);
+  console.log('token prefix:', token.substring(0, 10));
+  console.log('URL:', fullUrl);
+
   try {
-    const res = await fetch(`${baseUrl}${sqPath}`, {
+    const res = await fetch(fullUrl, {
       method: event.httpMethod,
       headers: {
         'Authorization': `Bearer ${token}`,
