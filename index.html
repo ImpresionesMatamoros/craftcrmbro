@@ -5613,7 +5613,17 @@ async function buildSquareInvoice(sqLocationId) {
       </div>
     </div>
 
-    <div id="sq-status" style="display:none;padding:10px 12px;border-radius:6px;font-size:12px;margin-bottom:12px"></div>
+    <div class="fld" style="margin-bottom:12px">
+      <div class="lbl">Moneda para Square</div>
+      <select class="inp" id="sq-currency" style="font-size:12px">
+        <option value="USD" selected>USD — Dólar americano</option>
+        <option value="MXN">MXN — Peso mexicano</option>
+        <option value="CAD">CAD — Dólar canadiense</option>
+        <option value="GBP">GBP — Libra esterlina</option>
+        <option value="EUR">EUR — Euro</option>
+      </select>
+      <div style="font-size:10px;color:var(--t3);margin-top:3px">Square procesa en la moneda de tu cuenta. Por default USD.</div>
+    </div>
 
     <div style="display:flex;gap:8px">
       <button class="btn" id="sq-confirm-btn" onclick="doCreateSquareInvoice()" style="flex:1;justify-content:center;background:#006aff;color:white;font-weight:700">
@@ -5634,6 +5644,7 @@ async function buildSquareInvoice(sqLocationId) {
 async function doCreateSquareInvoice() {
   const { sqLocationId, tot, cl, orderNum } = window._sqCtx || {};
   if (!sqLocationId) { toast('Error: sin Location ID'); return; }
+  const sqCurrency = document.getElementById('sq-currency')?.value || 'USD';
 
   const confirmBtn = document.getElementById('sq-confirm-btn');
   const statusEl = document.getElementById('sq-status');
@@ -5690,7 +5701,7 @@ async function doCreateSquareInvoice() {
       quantity: String(l.qty || 1),
       base_price_money: {
         amount: Math.round((parseFloat(l.price) || 0) * 100),
-        currency: 'USD'
+        currency: sqCurrency
       },
       note: l.notas_linea || undefined
     }));
@@ -5755,7 +5766,14 @@ async function doCreateSquareInvoice() {
         title: `Orden ${orderNum}`,
         description: OF.notas || `Factura generada desde CraftCRM`,
         sale_or_service_date: new Date().toISOString().split('T')[0],
-        store_payment_method_enabled: false
+        store_payment_method_enabled: false,
+        accepted_payment_methods: {
+          card: true,
+          square_gift_card: false,
+          bank_account: false,
+          buy_now_pay_later: false,
+          cash_app_pay: false
+        }
       }
     };
 
