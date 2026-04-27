@@ -5690,7 +5690,7 @@ async function doCreateSquareInvoice() {
       quantity: String(l.qty || 1),
       base_price_money: {
         amount: Math.round((parseFloat(l.price) || 0) * 100),
-        currency: OF.moneda || 'USD'
+        currency: 'USD'
       },
       note: l.notas_linea || undefined
     }));
