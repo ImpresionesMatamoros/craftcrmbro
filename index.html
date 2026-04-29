@@ -992,18 +992,70 @@ const PRESET_THEMES={
 };
 let BRAND={name:'CraftCRM',logoUrl:'',theme:'forest',custom:{c1:'#d4ff47',c2:'#3ddc84',c3:'#ff6b35',c4:'#4d94ff',c5:'#efefef'}};
 // ── TAX & CURRENCY CONFIG ──────────────────────────────
-const TAX_KEY = 'craftcrm_taxes';
 let TAX_CONFIG = [];
-function loadTaxConfig(){
-  try{const s=localStorage.getItem(TAX_KEY);if(s)TAX_CONFIG=JSON.parse(s);}catch(e){}
-  if(!Array.isArray(TAX_CONFIG)||TAX_CONFIG.length===0){
-    TAX_CONFIG=[{id:'iva',label:'IVA',rate:16,enabled:true}];
+let DEFAULT_MONEDA = 'USD';
+
+function getActiveTax(){return TAX_CONFIG.find(t=>t.enabled)||{label:'Tax',rate:0};}
+function getActiveTaxRate(){return parseFloat(getActiveTax().rate)||0;}
+function getActiveTaxLabel(){return getActiveTax().label||'Tax';}
+
+async function loadConfigFromSupabase(){
+  try {
+    // Load moneda from configuracion table
+    const rows = await sb('configuracion','select=clave,valor').catch(()=>[]);
+    if(Array.isArray(rows)){
+      rows.forEach(r => {
+        if(r.clave === 'moneda') DEFAULT_MONEDA = r.valor || 'USD';
+      });
+    }
+    // Load cargos (taxes, fees, etc.)
+    const cargos = await sb('cargos_config','select=*&order=orden.asc&activo=eq.true').catch(()=>[]);
+    if(Array.isArray(cargos) && cargos.length > 0){
+      TAX_CONFIG = cargos.map(c=>({
+        id: c.id, label: c.nombre, rate: parseFloat(c.valor)||0,
+        enabled: c.activo, tipo: c.tipo, aplicar_a: c.aplicar_a, orden: c.orden
+      }));
+    } else {
+      TAX_CONFIG = [];
+    }
+  } catch(e){ console.warn('loadConfigFromSupabase error',e); }
+}
+
+async function saveConfigMoneda(moneda){
+  DEFAULT_MONEDA = moneda;
+  const existing = await sb('configuracion','select=id&clave=eq.moneda').catch(()=>[]);
+  if(existing?.length > 0){
+    await sb('configuracion',`clave=eq.moneda`,'PATCH',{valor:moneda});
+  } else {
+    await sb('configuracion','','POST',{clave:'moneda',valor:moneda});
   }
 }
-function saveTaxConfig(){localStorage.setItem(TAX_KEY,JSON.stringify(TAX_CONFIG));}
-function getActiveTax(){return TAX_CONFIG.find(t=>t.enabled)||{label:'IVA',rate:16};}
-function getActiveTaxRate(){return parseFloat(getActiveTax().rate)||0;}
-function getActiveTaxLabel(){return getActiveTax().label||'IVA';}
+
+async function saveCargoToSupabase(cargo){
+  const body = {
+    nombre: cargo.label, tipo: cargo.tipo||'porcentaje',
+    valor: cargo.rate, aplicar_a: cargo.aplicar_a||'subtotal',
+    activo: cargo.enabled, orden: cargo.orden||0
+  };
+  if(cargo.id && !String(cargo.id).startsWith('new_')){
+    await sb('cargos_config',`id=eq.${cargo.id}`,'PATCH',body);
+  } else {
+    const rows = await sb('cargos_config','','POST',body);
+    if(rows?.[0]?.id) cargo.id = rows[0].id;
+  }
+}
+
+async function deleteCargoFromSupabase(id){
+  if(!id || String(id).startsWith('new_')) return;
+  await sb('cargos_config',`id=eq.${id}`,'DELETE');
+}
+
+// Legacy compat — kept for any old calls
+function loadTaxConfig(){ /* now loaded from Supabase via loadConfigFromSupabase */ }
+function saveTaxConfig(){
+  // save all cargos back to supabase
+  TAX_CONFIG.forEach(t => saveCargoToSupabase(t));
+}
 
 // Legacy compat
 const ACCENT_PRESETS=['#d4ff47','#ff6b35','#00d4ff','#ff4db8','#7c3aed','#10b981','#f59e0b','#ef4444'];
@@ -1127,6 +1179,7 @@ async function loadAll(){
     ]);
     DATA.productos=p||[];DATA.clientes=c||[];DATA.ordenes=o||[];DATA.proveedores=s||[];
     sbConn=true;$('conn-dot').classList.add('ok');$('conn-dot').title='Conectado';
+    await loadConfigFromSupabase();
   }catch(e){sbConn=false;$('conn-dot').classList.remove('ok');}
 }
 
@@ -1368,13 +1421,13 @@ async function quickWhatsapp(ordId) {
   // Wait for render then trigger WA
   setTimeout(() => whatsappOrder(), 100);
 }
-let OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',fecha_entrega:'',notas:'',moneda:'MXN',descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0,imagenes:[]};
+let OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',fecha_entrega:'',notas:'',moneda:DEFAULT_MONEDA,descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0,imagenes:[]};
 let _payOpen=false;
 let _calMonth=new Date().getMonth(), _calYear=new Date().getFullYear();
 
 function openNewOrder(){
   OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',
-    fecha_entrega:defaultDelivery(),notas:'',moneda:'MXN',descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
+    fecha_entrega:defaultDelivery(),notas:'',moneda:DEFAULT_MONEDA,descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
   renderOrderForm();
 }
 
@@ -2349,15 +2402,37 @@ async function _doCreateProdLine(nombre, categoria, precio) {
 
 // ── TOTALS — uses each line's strategy for subtotal ──
 function calcTotals() {
-  // Sum line subtotals (already maintained by LF.set/refreshTotals)
-  // Don't re-run strategies here to avoid overwriting manual prices
   const sub = OF.lines.reduce((s, l) => s + (parseFloat(l.subtotal) || 0), 0);
   const disc = sub * (parseFloat(OF.descuento_pct) || 0) / 100;
   const after = sub - disc;
-  const iva = OF.iva ? after * (getActiveTaxRate()/100) : 0;
-  return { sub, disc, after, iva, total: after + iva };
+
+  // Apply all active cargos
+  let cargosTotal = 0;
+  const cargosDesglose = [];
+  if(OF.iva && TAX_CONFIG.length > 0){
+    TAX_CONFIG.filter(t => t.enabled).forEach(t => {
+      const base = (t.aplicar_a === 'total') ? (after + cargosTotal) : after;
+      const monto = t.tipo === 'fijo' ? parseFloat(t.rate)||0 : base * (parseFloat(t.rate)||0) / 100;
+      cargosTotal += monto;
+      cargosDesglose.push({label: t.label, rate: t.rate, tipo: t.tipo, monto});
+    });
+  }
+  // Legacy iva field for backward compat
+  const iva = cargosDesglose[0]?.monto || 0;
+  return { sub, disc, after, iva, cargosDesglose, cargosTotal, total: after + cargosTotal };
 }
 function buildTotalsHTML(tot){
+  const cargosRows = (OF.iva && tot.cargosDesglose?.length > 0)
+    ? tot.cargosDesglose.map(c=>`
+        <div class="tot-row">
+          <span><button class="iva-btn on">${c.label} ${c.tipo==='fijo'?'(fijo)':c.rate+'%'}</button></span>
+          <span style="font-family:'DM Mono',monospace">$${fmt(c.monto)}</span>
+        </div>`).join('')
+    : `<div class="tot-row">
+        <span><button class="iva-btn${OF.iva?' on':''}" id="iva-toggle-btn">${OF.iva?'✓ ':''} ${getActiveTaxLabel()} ${getActiveTaxRate()>0?getActiveTaxRate()+'%':''}</button></span>
+        <span id="iva-amount" style="font-family:'DM Mono',monospace;color:${OF.iva?'var(--t1)':'var(--t3)'}">${OF.iva?'$'+fmt(tot.iva):'—'}</span>
+      </div>`;
+
   return`
     <div class="tot-row"><span>Subtotal</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.sub)}</span></div>
     <div class="tot-row">
@@ -2368,10 +2443,7 @@ function buildTotalsHTML(tot){
       </span>
       <span style="font-family:'DM Mono',monospace;color:${tot.disc>0?'var(--red)':'var(--t3)'}">${tot.disc>0?'−$'+fmt(tot.disc):'—'}</span>
     </div>
-    <div class="tot-row">
-      <span><button class="iva-btn${OF.iva?' on':''}" id="iva-toggle-btn">${OF.iva?'✓ ':''} ${getActiveTaxLabel()} ${getActiveTaxRate()>0?getActiveTaxRate()+'%':''}</button></span>
-      <span id="iva-amount" style="font-family:'DM Mono',monospace;color:${OF.iva?'var(--t1)':'var(--t3)'}">${OF.iva?'$'+fmt(tot.iva):'—'}</span>
-    </div>
+    ${cargosRows}
     <div class="tot-total"><span>Total</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.total)}&nbsp;${OF.moneda}</span></div>`;
 }
 function refreshTotals(){
@@ -2908,7 +2980,9 @@ function printOrder() {
   <div class="totals">
     <div class="tot-row"><span>Subtotal</span><span>$${fmt(tot.sub)}</span></div>
     ${tot.disc>0?`<div class="tot-row"><span>Descuento (${OF.descuento_pct}%)</span><span>-$${fmt(tot.disc)}</span></div>`:''}
-    ${OF.iva?`<div class="tot-row"><span>${getActiveTaxLabel()} (${getActiveTaxRate()}%)</span><span>$${fmt(tot.iva)}</span></div>`:''}
+    ${OF.iva && tot.cargosDesglose?.length > 0
+      ? tot.cargosDesglose.map(c=>`<div class="tot-row"><span>${esc(c.label)} (${c.tipo==='fijo'?'fijo':c.rate+'%'})</span><span>$${fmt(c.monto)}</span></div>`).join('')
+      : OF.iva ? `<div class="tot-row"><span>${getActiveTaxLabel()} (${getActiveTaxRate()}%)</span><span>$${fmt(tot.iva)}</span></div>` : ''}
     <div class="tot-final"><span>Total</span><span>$${fmt(tot.total)} ${OF.moneda}</span></div>
   </div>
   ${OF.notas?`<div class="notes"><strong>Notas:</strong> ${esc(OF.notas)}</div>`:''}
@@ -3016,7 +3090,7 @@ function showCalContextMenu(e,dateStr){
 function closeCtxMenu(){document.getElementById('ctx-menu')?.remove();}
 
 function openNewOrderForDate(dateStr){
-  OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',fecha_entrega:dateStr,notas:'',moneda:'MXN',descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
+  OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',fecha_entrega:dateStr,notas:'',moneda:DEFAULT_MONEDA,descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
   renderOrderForm();
 }
 
@@ -3543,7 +3617,7 @@ function cpOpenPendingCotiz(cid, nid){
   openNewOrderForClient(cid);
 }
 function openNewOrderForClient(cid){
-  OF={id:null,numero:'',cliente_id:cid,cliente_nombre:'',status:'cotizacion',fecha_entrega:defaultDelivery(),notas:'',moneda:'MXN',descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
+  OF={id:null,numero:'',cliente_id:cid,cliente_nombre:'',status:'cotizacion',fecha_entrega:defaultDelivery(),notas:'',moneda:DEFAULT_MONEDA,descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
   const cl=DATA.clientes.find(c=>c.id===cid);
   if(cl) OF.cliente_nombre=clName(cl);
   navigate('orders');
@@ -4197,7 +4271,7 @@ const off=(d)=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString
 
 async function seedOrder(clientId, status, offset, total, numero, lines, notas='', pagado=0){
   const payload={
-    cliente_id:clientId, status, fecha_entrega:off(offset), notas, moneda:'MXN',
+    cliente_id:clientId, status, fecha_entrega:off(offset), notas, moneda:DEFAULT_MONEDA,
     descuento_pct:0, subtotal:total, total, numero:`ORD-${numero}`,
   };
   const attempts=[{...payload,iva:false,pagado},{...payload,pagado},{...payload}];
@@ -5488,39 +5562,66 @@ function gcClose() {
 // ════════════════════════════════════════════════════════
 function renderTaxSettings(){
   const rows = TAX_CONFIG.map((t,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--s2);border:1px solid var(--border2);border-radius:6px;margin-bottom:6px">
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--s2);border:1px solid var(--border2);border-radius:6px;margin-bottom:6px;flex-wrap:wrap">
       <input type="checkbox" ${t.enabled?'checked':''}
-        onchange="TAX_CONFIG[${i}].enabled=this.checked;saveTaxConfig();renderSettings('impuestos')"
+        onchange="TAX_CONFIG[${i}].enabled=this.checked;saveCargoToSupabase(TAX_CONFIG[${i}]);renderSettings('impuestos')"
         style="width:15px;height:15px;cursor:pointer;accent-color:var(--acc);flex-shrink:0">
-      <input class="inp" value="${esc(t.label)}" placeholder="Nombre (ej: IVA, GST, Tax, Sales Tax)"
-        style="flex:1;font-size:12px" maxlength="20"
-        onchange="TAX_CONFIG[${i}].label=this.value.trim();saveTaxConfig()">
+      <input class="inp" value="${esc(t.label)}" placeholder="Nombre (ej: IVA, Tax, Shipping, CC Fee)"
+        style="flex:2;min-width:100px;font-size:12px" maxlength="30"
+        onchange="TAX_CONFIG[${i}].label=this.value.trim();saveCargoToSupabase(TAX_CONFIG[${i}])">
+      <select class="inp" style="flex:1;min-width:90px;font-size:11px;padding:4px 6px"
+        onchange="TAX_CONFIG[${i}].tipo=this.value;saveCargoToSupabase(TAX_CONFIG[${i}]);renderSettings('impuestos')">
+        <option value="porcentaje" ${(t.tipo||'porcentaje')==='porcentaje'?'selected':''}>% Porcentaje</option>
+        <option value="fijo" ${t.tipo==='fijo'?'selected':''}>$ Monto fijo</option>
+      </select>
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-        <input class="inp" type="number" min="0" max="100" step="0.01" value="${t.rate}"
+        <input class="inp" type="number" min="0" step="0.01" value="${t.rate}"
           style="width:68px;font-size:12px;text-align:right"
-          onchange="TAX_CONFIG[${i}].rate=parseFloat(this.value)||0;saveTaxConfig()">
-        <span style="font-size:12px;color:var(--t3)">%</span>
+          onchange="TAX_CONFIG[${i}].rate=parseFloat(this.value)||0;saveCargoToSupabase(TAX_CONFIG[${i}])">
+        <span style="font-size:12px;color:var(--t3)">${(t.tipo||'porcentaje')==='fijo'?DEFAULT_MONEDA:'%'}</span>
       </div>
-      <button class="btn-icon del" title="Eliminar" onclick="TAX_CONFIG.splice(${i},1);saveTaxConfig();renderSettings('impuestos')">
+      <select class="inp" style="flex:1;min-width:90px;font-size:11px;padding:4px 6px"
+        onchange="TAX_CONFIG[${i}].aplicar_a=this.value;saveCargoToSupabase(TAX_CONFIG[${i}])">
+        <option value="subtotal" ${(t.aplicar_a||'subtotal')==='subtotal'?'selected':''}>Sobre subtotal</option>
+        <option value="total" ${t.aplicar_a==='total'?'selected':''}>Sobre total</option>
+      </select>
+      <button class="btn-icon del" title="Eliminar" onclick="deleteCargoFromSupabase(TAX_CONFIG[${i}].id);TAX_CONFIG.splice(${i},1);renderSettings('impuestos')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>`).join('');
 
   return `<div class="card">
-    <div class="lbl" style="margin-bottom:4px">Tipo de impuesto activo</div>
+    <div class="lbl" style="margin-bottom:4px">Moneda global</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px">Se aplica a todas las órdenes nuevas. Cambia una sola vez.</div>
+    <select class="inp" style="width:auto;font-size:12px;margin-bottom:16px"
+      onchange="saveConfigMoneda(this.value).then(()=>toast('Moneda guardada ✓'))">
+      <option value="USD" ${DEFAULT_MONEDA==='USD'?'selected':''}>🇺🇸 USD — Dólar americano</option>
+      <option value="MXN" ${DEFAULT_MONEDA==='MXN'?'selected':''}>🇲🇽 MXN — Peso mexicano</option>
+      <option value="CAD" ${DEFAULT_MONEDA==='CAD'?'selected':''}>🇨🇦 CAD — Dólar canadiense</option>
+      <option value="EUR" ${DEFAULT_MONEDA==='EUR'?'selected':''}>🇪🇺 EUR — Euro</option>
+      <option value="GBP" ${DEFAULT_MONEDA==='GBP'?'selected':''}>🇬🇧 GBP — Libra esterlina</option>
+    </select>
+
+    <div class="lbl" style="margin-bottom:4px">Cargos adicionales</div>
     <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.6">
-      Activa el impuesto que uses en tus cotizaciones. Si trabajas en USD o sin impuesto, ponlo en 0% o desactívalo.
+      Agrega impuestos, envío, comisión de tarjeta, etc. Se guardan en Supabase y aplican globalmente.
     </div>
     ${rows}
     <button class="btn btn-ghost" style="font-size:12px;margin-top:6px;width:100%;justify-content:center"
-      onclick="TAX_CONFIG.push({id:'tax_'+Date.now(),label:'Impuesto',rate:0,enabled:false});saveTaxConfig();renderSettings('impuestos')">
-      + Agregar tipo de impuesto
+      onclick="addNuevoCargo()">
+      + Agregar cargo
     </button>
     <div style="margin-top:14px;padding:10px 12px;background:var(--s3);border-radius:6px;font-size:11px;color:var(--t3);line-height:1.6">
-      💡 Solo se aplica el primero activado. El nombre y porcentaje aparecen en cotizaciones, impresión y WhatsApp.<br>
-      Para USD sin impuesto: deja el toggle desactivado o pon 0%.
+      💡 Solo los cargos activados (✓) se aplican en las órdenes. El primero activado se usa como impuesto principal en cotizaciones e impresión.
     </div>
   </div>`;
+}
+
+async function addNuevoCargo(){
+  const nuevo = {id:'new_'+Date.now(),label:'Impuesto',rate:0,enabled:false,tipo:'porcentaje',aplicar_a:'subtotal',orden:TAX_CONFIG.length};
+  await saveCargoToSupabase(nuevo);
+  TAX_CONFIG.push(nuevo);
+  renderSettings('impuestos');
 }
 
 // ════════════════════════════════════════════════════════
