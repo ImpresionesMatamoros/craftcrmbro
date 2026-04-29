@@ -28,6 +28,9 @@
   --acc-dim:rgba(212,255,71,0.08); --acc-dim2:rgba(212,255,71,0.14);
   --red:#ff4545; --red-dim:rgba(255,69,69,0.1);
   --green:#3ddc84; --amber:#ff6b35; --blue:#4d94ff;
+  --delivered-paid:#1a5c32; --delivered-paid-dim:rgba(26,92,50,0.18); --delivered-paid-bright:#2a8c4e;
+  --delivered-unpaid:#3ddc84; --delivered-unpaid-dim:rgba(61,220,132,0.15);
+  --archived:#3a3a3a; --archived-dim:rgba(80,80,80,0.12);
   --r:8px; --r2:5px;
   --sidebar-w:52px;
 }
@@ -110,10 +113,10 @@ button{cursor:pointer;}
 .lp-body{flex:1;overflow-y:auto;padding:6px;}
 .lp-body::-webkit-scrollbar{width:3px;}
 .lp-body::-webkit-scrollbar-thumb{background:var(--s4);border-radius:3px;}
-.lp-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .1s;margin-bottom:2px;}
-.lp-item:hover{background:var(--s2);border-color:var(--border);}
-.lp-item.selected{background:var(--acc-dim);border-color:rgba(212,255,71,.2);}
-.lp-item-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.lp-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid transparent;border-left-width:3px;border-radius:6px;cursor:pointer;transition:all .1s;margin-bottom:2px;}
+.lp-item:hover{background:var(--s2);border-color:var(--border);border-left-width:3px;}
+.lp-item.selected{background:var(--acc-dim);border-color:rgba(212,255,71,.2);border-left-width:3px;}
+.lp-item-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .lp-item-body{flex:1;min-width:0;}
 .lp-item-num{font-size:10px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t2);}
 .lp-item-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -254,9 +257,18 @@ textarea.inp{resize:vertical;min-height:56px;line-height:1.5;}
 .stat{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;transition:background .25s;}
 .stat-val{font-size:20px;font-weight:700;}
 .stat-key{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;}
-.order-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r2);cursor:pointer;transition:border-color 0.1s,background .25s;background:var(--s1);margin-bottom:4px;}
+.order-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r2);cursor:pointer;transition:all 0.15s;background:var(--s1);margin-bottom:4px;border-left-width:3px;}
 .order-row:hover{border-color:var(--border3);}
-.opip{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.order-row.or-done{background:rgba(15,30,20,0.55);border-color:rgba(26,92,50,0.18);border-left-color:#1a5c32!important;opacity:0.62;filter:saturate(0.4);}
+.order-row.or-done:hover{opacity:0.85;filter:saturate(0.7);}
+.order-row.or-cobro{background:rgba(18,46,30,0.45);border-color:rgba(61,220,132,0.35);border-left-color:#3ddc84!important;animation:cobro-pulse 2.4s ease-in-out infinite;}
+.order-row.or-cobro:hover{animation:none;border-color:#3ddc84;}
+@keyframes cobro-pulse{0%,100%{border-left-color:#3ddc84;box-shadow:none}50%{border-left-color:#5fffa0;box-shadow:inset 2px 0 8px rgba(61,220,132,0.18)}}
+.lp-item.lp-done{opacity:0.5;filter:saturate(0.3);}
+.lp-item.lp-done:hover{opacity:0.8;filter:saturate(0.6);}
+.lp-item.lp-cobro{background:rgba(18,46,30,0.35);border-left-color:#3ddc84!important;}
+.lp-item.lp-cobro .lp-item-name{color:#3ddc84;}
+.opip{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .onum{font-size:12px;font-weight:700;font-family:'DM Mono',monospace;}
 .ometa{font-size:11px;color:var(--t3);}
 .list-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r2);cursor:pointer;transition:border-color 0.1s;background:var(--s1);margin-bottom:4px;}
@@ -993,7 +1005,7 @@ const PRESET_THEMES={
 let BRAND={name:'CraftCRM',logoUrl:'',theme:'forest',custom:{c1:'#d4ff47',c2:'#3ddc84',c3:'#ff6b35',c4:'#4d94ff',c5:'#efefef'}};
 // ── TAX & CURRENCY CONFIG ──────────────────────────────
 let TAX_CONFIG = [];
-let DEFAULT_MONEDA = 'USD';
+let DEFAULT_MONEDA = 'USD'; // loaded from Supabase on connect
 
 function getActiveTax(){return TAX_CONFIG.find(t=>t.enabled)||{label:'Tax',rate:0};}
 function getActiveTaxRate(){return parseFloat(getActiveTax().rate)||0;}
@@ -1001,15 +1013,13 @@ function getActiveTaxLabel(){return getActiveTax().label||'Tax';}
 
 async function loadConfigFromSupabase(){
   try {
-    // Load moneda from configuracion table
     const rows = await sb('configuracion','select=clave,valor').catch(()=>[]);
     if(Array.isArray(rows)){
       rows.forEach(r => {
         if(r.clave === 'moneda') DEFAULT_MONEDA = r.valor || 'USD';
       });
     }
-    // Load cargos (taxes, fees, etc.)
-    const cargos = await sb('cargos_config','select=*&order=orden.asc&activo=eq.true').catch(()=>[]);
+    const cargos = await sb('cargos_config','select=*&order=orden.asc').catch(()=>[]);
     if(Array.isArray(cargos) && cargos.length > 0){
       TAX_CONFIG = cargos.map(c=>({
         id: c.id, label: c.nombre, rate: parseFloat(c.valor)||0,
@@ -1023,31 +1033,37 @@ async function loadConfigFromSupabase(){
 
 async function saveConfigMoneda(moneda){
   DEFAULT_MONEDA = moneda;
-  const existing = await sb('configuracion','select=id&clave=eq.moneda').catch(()=>[]);
-  if(existing?.length > 0){
-    await sb('configuracion',`clave=eq.moneda`,'PATCH',{valor:moneda});
-  } else {
-    await sb('configuracion','','POST',{clave:'moneda',valor:moneda});
-  }
+  try {
+    const existing = await sb('configuracion','select=id&clave=eq.moneda').catch(()=>[]);
+    if(existing?.length > 0){
+      await sb('configuracion',`clave=eq.moneda`,'PATCH',{valor:moneda});
+    } else {
+      await sb('configuracion','','POST',{clave:'moneda',valor:moneda,user_id:null});
+    }
+  } catch(e){ toast('Error guardando moneda: '+e.message); }
 }
 
 async function saveCargoToSupabase(cargo){
   const body = {
-    nombre: cargo.label, tipo: cargo.tipo||'porcentaje',
-    valor: cargo.rate, aplicar_a: cargo.aplicar_a||'subtotal',
-    activo: cargo.enabled, orden: cargo.orden||0
+    nombre: cargo.label || 'Cargo',
+    tipo: cargo.tipo || 'porcentaje',
+    valor: parseFloat(cargo.rate) || 0,
+    aplicar_a: cargo.aplicar_a || 'subtotal',
+    activo: !!cargo.enabled,
+    orden: cargo.orden || 0,
+    user_id: null
   };
   if(cargo.id && !String(cargo.id).startsWith('new_')){
-    await sb('cargos_config',`id=eq.${cargo.id}`,'PATCH',body);
+    await sb('cargos_config', `id=eq.${cargo.id}`, 'PATCH', body);
   } else {
-    const rows = await sb('cargos_config','','POST',body);
+    const rows = await sb('cargos_config', '', 'POST', body);
     if(rows?.[0]?.id) cargo.id = rows[0].id;
   }
 }
 
 async function deleteCargoFromSupabase(id){
   if(!id || String(id).startsWith('new_')) return;
-  await sb('cargos_config',`id=eq.${id}`,'DELETE');
+  try { await sb('cargos_config',`id=eq.${id}`,'DELETE'); } catch(e) { /* table may not exist */ }
 }
 
 // Legacy compat — kept for any old calls
@@ -1118,8 +1134,33 @@ function hexToRgb(hex){
   try{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`${r},${g},${b}`;}catch(e){return'212,255,71';}
 }
 
-const SC={cotizacion:'#4d94ff',confirmada:'#ff6b35',en_produccion:'#aa77ff',lista:'#3ddc84',entregada:'#555',cancelada:'#ff4545'};
+const SC={cotizacion:'#4d94ff',confirmada:'#ff6b35',en_produccion:'#aa77ff',lista:'#3ddc84',entregada:'#2a8c4e',cancelada:'#ff4545'};
 const SL={cotizacion:'Cotización',confirmada:'Confirmada',en_produccion:'En producción',lista:'Lista',entregada:'Entregada',cancelada:'Cancelada'};
+
+// Returns the visual color for an order based on status + payment state
+function getOrderColor(o) {
+  if (!o) return '#555';
+  if (o.status === 'cancelada') return '#ff4545';
+  if (o.status === 'entregada') {
+    const total = parseFloat(o.total || 0);
+    const pagado = parseFloat(o.pagado || 0);
+    const isPaid = total > 0 && pagado >= total - 0.01;
+    return isPaid ? '#1a5c32' : '#3ddc84';
+  }
+  return SC_HEX[o.status] || '#555';
+}
+
+// Returns a label that reflects payment status for delivered orders
+function getOrderLabel(o) {
+  if (!o) return '';
+  if (o.status === 'entregada') {
+    const total = parseFloat(o.total || 0);
+    const pagado = parseFloat(o.pagado || 0);
+    const isPaid = total > 0 && pagado >= total - 0.01;
+    return isPaid ? 'Entregada · Pagada' : 'Entregada · Pend. cobro';
+  }
+  return SL[o.status] || o.status;
+}
 // ── DYNAMIC CATEGORY SYSTEM ──
 // Categories stored in localStorage, not hardcoded
 // Each category: {id, name, color, incrementType, config}
@@ -1230,7 +1271,9 @@ function renderSetup(err){
 }
 
 // ══ ORDERS LIST ══
-const SC_HEX={cotizacion:'#4d94ff',confirmada:'#ff6b35',en_produccion:'#aa77ff',lista:'#3ddc84',entregada:'#555555',cancelada:'#ff4545'};
+const SC_HEX={cotizacion:'#4d94ff',confirmada:'#ff6b35',en_produccion:'#aa77ff',lista:'#3ddc84',entregada:'#2a8c4e',cancelada:'#ff4545'};
+
+let _hideDone = false; // toggle: hide entregada+pagada orders
 
 function renderOrders(q='',filter='all'){
   const now=new Date();
@@ -1239,8 +1282,16 @@ function renderOrders(q='',filter='all'){
   let list=DATA.ordenes;
   if(q)list=list.filter(o=>{const cl=DATA.clientes.find(c=>c.id===o.cliente_id);return(o.numero||'').toLowerCase().includes(q.toLowerCase())||(cl?.nombre||'').toLowerCase().includes(q.toLowerCase());});
   if(filter==='active')list=list.filter(o=>!['entregada','cancelada'].includes(o.status));
+
   else if(filter==='today'){const ts=now.toISOString().slice(0,10);list=list.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===ts);}
   else if(filter==='week'){const ts=now.toISOString().slice(0,10);const we=new Date(now);we.setDate(we.getDate()+7);const ws=we.toISOString().slice(0,10);list=list.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>=ts&&o.fecha_entrega.slice(0,10)<=ws);}
+
+
+
+  // Count cobro-pendiente for the toggle badge
+  const cobroPendiente=list.filter(o=>{const t=parseFloat(o.total||0),p=parseFloat(o.pagado||0);return o.status==='entregada'&&t>0&&p<t-0.01;}).length;
+  const donePaid=list.filter(o=>{const t=parseFloat(o.total||0),p=parseFloat(o.pagado||0);return o.status==='entregada'&&t>0&&p>=t-0.01;}).length;
+  if(_hideDone)list=list.filter(o=>{const t=parseFloat(o.total||0),p=parseFloat(o.pagado||0);return!(o.status==='entregada'&&t>0&&p>=t-0.01);});
 
   if(isDesktop()){
     lpShow(`
@@ -1258,21 +1309,30 @@ function renderOrders(q='',filter='all'){
           <button class="lpf${filter==='today'?' on':''}" onclick="renderOrders('${q}','today')">Hoy</button>
           <button class="lpf${filter==='week'?' on':''}" onclick="renderOrders('${q}','week')">Semana</button>
         </div>
+        ${donePaid>0?`<button onclick="_hideDone=!_hideDone;renderOrders('${q}','${filter}')"
+          style="width:100%;margin-top:6px;padding:5px 10px;border-radius:5px;border:1px solid ${_hideDone?'rgba(26,92,50,0.5)':'rgba(26,92,50,0.25)'};background:${_hideDone?'rgba(26,92,50,0.2)':'transparent'};color:${_hideDone?'#2a8c4e':'var(--t3)'};font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="11" height="11"><path d="${_hideDone?'M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94':'M1 12s4-8 11-8 11 8 11 8'}"/>${_hideDone?'<path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>':'<circle cx="12" cy="12" r="3"/>'}</svg>
+          ${_hideDone?`Mostrar ${donePaid} cerradas`:`Ocultar ${donePaid} cerrada${donePaid!==1?'s':''}`}
+        </button>`:''}
       </div>
       <div class="lp-body">
         ${list.length===0?`<div style="padding:20px;text-align:center;color:var(--t3);font-size:11px">${q?'Sin resultados':'Sin órdenes'}</div>`
         :list.map(o=>{
           const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
-          const sc=SC_HEX[o.status]||'#555';
+          const sc=getOrderColor(o);
+          const total=parseFloat(o.total||0),pagado=parseFloat(o.pagado||0);
+          const isDeliveredPaid=o.status==='entregada'&&total>0&&pagado>=total-0.01;
+          const isDeliveredUnpaid=o.status==='entregada'&&!(total>0&&pagado>=total-0.01);
           const isSelected=_lpSelectedId===o.id;
-          return`<div class="lp-item${isSelected?' selected':''}" onclick="openOrderDesktop('${o.id}')">
+          const extraClass=isDeliveredPaid?' lp-done':isDeliveredUnpaid?' lp-cobro':'';
+          return`<div class="lp-item${isSelected?' selected':''}${extraClass}" onclick="openOrderDesktop('${o.id}')" style="border-left-color:${sc}">
             <div class="lp-item-dot" style="background:${sc}"></div>
             <div class="lp-item-body">
-              <div class="lp-item-num">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+              <div class="lp-item-num">${esc(o.numero||o.id.slice(0,8).toUpperCase())}${isDeliveredUnpaid?` <span style="color:#3ddc84;font-size:9px">● $</span>`:''}</div>
               <div class="lp-item-name">${clName(cl)}</div>
-              <div class="lp-item-meta">${o.fecha_entrega?fmtDateES(o.fecha_entrega)+' · ':''}${esc(SL[o.status]||o.status)}</div>
+              <div class="lp-item-meta">${o.fecha_entrega?fmtDateES(o.fecha_entrega)+' · ':''}${esc(getOrderLabel(o))}</div>
             </div>
-            <div class="lp-item-amt">$${fmtS(parseFloat(o.total||0))}</div>
+            <div class="lp-item-amt" style="${isDeliveredPaid?'color:var(--t3)':isDeliveredUnpaid?'color:#3ddc84':''}">$${fmtS(total)}</div>
           </div>`;
         }).join('')}
       </div>
@@ -1310,28 +1370,48 @@ function renderOrders(q='',filter='all'){
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px">
       <span style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em">Órdenes</span>
-      <div class="srch" style="margin:0;flex:1;max-width:200px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="inp" style="font-size:12px" placeholder="Buscar..." oninput="renderOrders(this.value)" value="${esc(q)}">
+      <div style="display:flex;align-items:center;gap:6px">
+        ${donePaid>0?`<button onclick="_hideDone=!_hideDone;renderOrders('${q}')"
+          style="padding:4px 9px;border-radius:5px;border:1px solid ${_hideDone?'rgba(26,92,50,0.5)':'rgba(26,92,50,0.25)'};background:${_hideDone?'rgba(26,92,50,0.2)':'transparent'};color:${_hideDone?'#2a8c4e':'var(--t3)'};font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">
+          ${_hideDone?`▶ ${donePaid} cerr.`:`✕ ${donePaid} cerr.`}
+        </button>`:''}
+        <div class="srch" style="margin:0;flex:1;max-width:200px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="inp" style="font-size:12px" placeholder="Buscar..." oninput="renderOrders(this.value)" value="${esc(q)}">
+        </div>
       </div>
     </div>
+    ${cobroPendiente>0?`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(18,46,30,0.5);border:1px solid rgba(61,220,132,0.4);border-radius:6px;margin-bottom:10px;animation:cobro-pulse 2.4s ease-in-out infinite">
+      <span style="font-size:15px">💸</span>
+      <div>
+        <div style="font-size:11px;font-weight:800;color:#3ddc84">${cobroPendiente} orden${cobroPendiente!==1?'es':''} entregada${cobroPendiente!==1?'s':''} sin cobrar</div>
+        <div style="font-size:10px;color:#3ddc84;opacity:.7">Las verdes brillantes son tuyo — solo falta cobrar</div>
+      </div>
+    </div>`:''}
     ${list.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">${q?'Sin resultados':'Sin órdenes aún'}</div>`
     :list.map(o=>{
       const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
-      const sc=SC_HEX[o.status]||'#555';
+      const sc=getOrderColor(o);
+      const statusLabel=getOrderLabel(o);
       const paid=parseFloat(o.pagado||0),total=parseFloat(o.total||0);
       const pct=total>0?Math.min(100,Math.round(paid/total*100)):0;
-      return`<div class="order-row" onclick="openEditOrder('${o.id}')" oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')">
+      const isDeliveredPaid=o.status==='entregada'&&total>0&&paid>=total-0.01;
+      const isDeliveredUnpaid=o.status==='entregada'&&!(total>0&&paid>=total-0.01);
+      const rowClass=isDeliveredPaid?' or-done':isDeliveredUnpaid?' or-cobro':'';
+      return`<div class="order-row${rowClass}" onclick="openEditOrder('${o.id}')" oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')"
+        style="border-left-color:${sc}"
+      >
         <div class="opip" style="background:${sc}"></div>
         <div style="flex:1;min-width:0">
-          <div class="onum">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-          <div class="ometa">${clName(cl)}${o.fecha_entrega?' · Entrega '+fmtDateES(o.fecha_entrega):''}</div>
+          <div class="onum" style="${isDeliveredPaid?'color:var(--t3)':''}">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+          <div class="ometa">${clName(cl)}${o.fecha_entrega?' · '+fmtDateES(o.fecha_entrega):''}</div>
         </div>
-        ${pct>0&&pct<100?`<span style="font-size:10px;color:var(--amber);font-weight:700">%${pct}</span>`:''}
-        ${pct>=100?`<span style="font-size:10px;color:var(--green);font-weight:700">✓</span>`:''}
+        ${isDeliveredPaid?`<span style="font-size:9px;font-weight:700;color:#2a8c4e;background:rgba(26,92,50,0.2);border-radius:4px;padding:2px 6px;white-space:nowrap">✓ LISTO</span>`:
+          isDeliveredUnpaid?`<span style="font-size:9px;font-weight:800;color:#3ddc84;background:rgba(61,220,132,0.15);border:1px solid rgba(61,220,132,0.4);border-radius:4px;padding:2px 6px;white-space:nowrap;animation:cobro-pulse 2.4s ease-in-out infinite">💵 COBRAR</span>`:
+          pct>0&&pct<100?`<span style="font-size:10px;color:var(--amber);font-weight:700">%${pct}</span>`:''}
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(total)}</div>
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${sc}">${SL[o.status]||o.status}</div>
+          <div style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace;${isDeliveredPaid?'color:var(--t3)':isDeliveredUnpaid?'color:#3ddc84':''}">$${fmtS(total)}</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${sc}">${statusLabel}</div>
         </div>
       </div>`;
     }).join('')}
@@ -1346,8 +1426,8 @@ async function openOrderDesktop(id){
   await openEditOrder(id);
   const o=DATA.ordenes.find(x=>x.id===id);
   if(o){
-    const sc=SC_HEX[o.status]||'#555';
-    ctxSet('Órdenes',o.numero||id.slice(0,8).toUpperCase(),sc,SL[o.status]||o.status,
+    const sc=getOrderColor(o);
+    ctxSet('Órdenes',o.numero||id.slice(0,8).toUpperCase(),sc,getOrderLabel(o),
       `<button class="btn btn-acc" onclick="saveOrder()" style="font-size:11px;padding:5px 12px">Guardar</button>`);
     const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
     dpShow(buildClientDP(cl,id));
@@ -1377,7 +1457,7 @@ function buildClientDP(cl,ordId){
           <span style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--acc)">$${fmtS(totalFact)}</span>
         </div>
         ${clientOrders.length===0?`<div style="font-size:11px;color:var(--t3)">Primera orden</div>`
-        :clientOrders.map(o=>{const sc=SC_HEX[o.status]||'#555';
+        :clientOrders.map(o=>{const sc=getOrderColor(o);
           return`<div class="dp-ord" onclick="openOrderDesktop('${o.id}')">
             <div class="dp-ord-dot" style="background:${sc}"></div>
             <div><div class="dp-ord-num">${esc(o.numero||o.id.slice(0,6).toUpperCase())}</div>
@@ -1427,7 +1507,8 @@ let _calMonth=new Date().getMonth(), _calYear=new Date().getFullYear();
 
 function openNewOrder(){
   OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',
-    fecha_entrega:defaultDelivery(),notas:'',moneda:DEFAULT_MONEDA,descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
+    fecha_entrega:defaultDelivery(),notas:'',moneda:DEFAULT_MONEDA,descuento_pct:0,iva:true,
+    cargos_override:{},total_guardado:0,lines:[],pagos:[],pagado:0};
   renderOrderForm();
 }
 
@@ -1441,18 +1522,20 @@ async function openEditOrder(id){
   try{const imgRaw=ord.imagenes_json;if(imgRaw)imagenes=typeof imgRaw==='string'?JSON.parse(imgRaw):imgRaw;}catch(e){}
   OF={id,numero:ord.numero||'',cliente_id:ord.cliente_id||null,cliente_nombre:cl?.nombre||'',
     status:ord.status||'cotizacion',fecha_entrega:ord.fecha_entrega||defaultDelivery(),
-    notas:ord.notas||'',moneda:ord.moneda||'MXN',descuento_pct:parseFloat(ord.descuento_pct)||0,
+    notas:ord.notas||'',moneda:DEFAULT_MONEDA,descuento_pct:parseFloat(ord.descuento_pct)||0,
     iva:ord.iva!==false,
+    cargos_override:{}, // per-cargo toggle: {cargoId: bool} — undefined means use cargo's own .enabled
     lines: hydrateLines(lines),
     pagos:pagos.map(p=>({id:p.id,monto:parseFloat(p.monto)||0,metodo:p.metodo||'efectivo',fecha:p.fecha||'',nota:p.nota||''})),
     pagado:parseFloat(ord.pagado||0),
+    total_guardado:parseFloat(ord.total||0), // saved total from DB — used for paid check
     imagenes};
   renderOrderForm();
 }
 
 function renderOrderForm(){
   const isEdit=!!OF.id;
-  const statusOpts=Object.keys(SC).map(s=>`<option value="${s}"${OF.status===s?' selected':''}>${SL[s]}</option>`).join('');
+  const statusOpts=Object.keys(SC).map(s=>`<option value="${s}"${OF.status===s?' selected':''}>${SL[s]||s}</option>`).join('');
   const tot=calcTotals();
   _payOpen=false;
   _calMonth=OF.fecha_entrega?parseInt(OF.fecha_entrega.split('-')[1])-1:new Date().getMonth();
@@ -1467,10 +1550,33 @@ function renderOrderForm(){
   <div class="of-head">
     <span style="font-size:17px;font-weight:700">${isEdit?esc(OF.numero):'Nueva orden'}</span>
     ${isEdit?`<span class="of-num">${OF.id.slice(0,8).toUpperCase()}</span>`:''}
-    <div style="margin-left:auto">
-      <select class="inp" style="width:auto;font-size:12px;padding:5px 8px" onchange="OF.status=this.value">${statusOpts}</select>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+      <select class="inp" id="of-status-sel" style="width:auto;font-size:12px;padding:5px 8px;border-color:${SC[OF.status]||'var(--border2)'};color:${SC[OF.status]||'var(--t1)'};font-weight:600" onchange="OF.status=this.value;document.getElementById('of-status-sel').style.borderColor=SC[this.value]||'var(--border2)';document.getElementById('of-status-sel').style.color=SC[this.value]||'var(--t1)'">${statusOpts}</select>
     </div>
   </div>
+
+  <!-- DELIVERED STATUS BANNER -->
+  ${isEdit && OF.status==='entregada' ? (()=>{
+    // Use the saved total (what was charged), not recalculated — avoids false "cobrar" when cargos changed
+    const savedTotal = parseFloat(OF.total_guardado || calcTotals().total || 0);
+    const pagado = parseFloat(OF.pagado || 0);
+    const isPaid2 = savedTotal > 0 && pagado >= savedTotal - 0.01;
+    return isPaid2
+      ? `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:rgba(26,92,50,0.18);border:1px solid rgba(26,92,50,0.4);border-radius:6px;margin-bottom:14px">
+          <span style="font-size:16px">✅</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#2a8c4e">Entregada y pagada — lista</div>
+            <div style="font-size:10px;color:#2a8c4e;opacity:.8">Aparece desvanecida en la lista · usa el toggle para ocultarla</div>
+          </div>
+        </div>`
+      : `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:rgba(61,220,132,0.08);border:1px solid rgba(61,220,132,0.4);border-radius:6px;margin-bottom:14px;animation:cobro-pulse 2.4s ease-in-out infinite">
+          <span style="font-size:16px">💵</span>
+          <div>
+            <div style="font-size:12px;font-weight:800;color:#3ddc84">Entregada — falta cobrar</div>
+            <div style="font-size:10px;color:#3ddc84;opacity:.8">Pagado: $${fmt(pagado)} / Total: $${fmt(savedTotal)}</div>
+          </div>
+        </div>`;
+  })() : ''}
 
   <!-- CLIENTE -->
   <div style="margin-bottom:16px">
@@ -1492,15 +1598,6 @@ function renderOrderForm(){
       <input class="inp" placeholder="Instrucciones..." value="${esc(OF.notas)}" onchange="OF.notas=this.value" style="font-size:12px">
     </div>
   </div>
-  <!-- MONEDA -->
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-    <div class="lbl" style="margin-bottom:0;white-space:nowrap">Moneda</div>
-    <select class="inp" style="width:auto;font-size:12px;padding:4px 8px" onchange="OF.moneda=this.value;refreshTotals()">
-      <option value="MXN" ${OF.moneda==='MXN'?'selected':''}>🇲🇽 MXN — Peso mexicano</option>
-      <option value="USD" ${OF.moneda==='USD'?'selected':''}>🇺🇸 USD — Dólar americano</option>
-    </select>
-  </div>
-
   <!-- LINES -->
   <div style="margin-bottom:4px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -2406,31 +2503,59 @@ function calcTotals() {
   const disc = sub * (parseFloat(OF.descuento_pct) || 0) / 100;
   const after = sub - disc;
 
-  // Apply all active cargos
   let cargosTotal = 0;
   const cargosDesglose = [];
-  if(OF.iva && TAX_CONFIG.length > 0){
-    TAX_CONFIG.filter(t => t.enabled).forEach(t => {
-      const base = (t.aplicar_a === 'total') ? (after + cargosTotal) : after;
-      const monto = t.tipo === 'fijo' ? parseFloat(t.rate)||0 : base * (parseFloat(t.rate)||0) / 100;
-      cargosTotal += monto;
-      cargosDesglose.push({label: t.label, rate: t.rate, tipo: t.tipo, monto});
-    });
-  }
-  // Legacy iva field for backward compat
-  const iva = cargosDesglose[0]?.monto || 0;
+  TAX_CONFIG.filter(t => t.enabled).forEach(t => {
+    // Per-cargo override: if key exists use it, else default ON (OF.iva)
+    const cargoKey = String(t.id);
+    const isOn = (OF.cargos_override && cargoKey in OF.cargos_override)
+      ? OF.cargos_override[cargoKey]
+      : OF.iva;
+    if (!isOn) return;
+    const base = (t.aplicar_a === 'total') ? (after + cargosTotal) : after;
+    const monto = t.tipo === 'fijo' ? parseFloat(t.rate)||0 : base * (parseFloat(t.rate)||0) / 100;
+    cargosTotal += monto;
+    cargosDesglose.push({id: t.id, label: t.label, rate: t.rate, tipo: t.tipo, monto, isOn: true});
+  });
+  // Also include OFF cargos in desglose so they show as toggleable
+  TAX_CONFIG.filter(t => t.enabled).forEach(t => {
+    const cargoKey = String(t.id);
+    const isOn = (OF.cargos_override && cargoKey in OF.cargos_override)
+      ? OF.cargos_override[cargoKey]
+      : OF.iva;
+    if (isOn) return; // already included above
+    cargosDesglose.push({id: t.id, label: t.label, rate: t.rate, tipo: t.tipo, monto: 0, isOn: false});
+  });
+  const iva = cargosDesglose.filter(c=>c.isOn)[0]?.monto || 0;
   return { sub, disc, after, iva, cargosDesglose, cargosTotal, total: after + cargosTotal };
 }
+
+function toggleCargo(cargoId) {
+  if (!OF.cargos_override) OF.cargos_override = {};
+  const key = String(cargoId);
+  const current = (key in OF.cargos_override) ? OF.cargos_override[key] : OF.iva;
+  OF.cargos_override[key] = !current;
+  refreshTotals();
+}
+
 function buildTotalsHTML(tot){
-  const cargosRows = (OF.iva && tot.cargosDesglose?.length > 0)
+  const hasCargos = TAX_CONFIG.some(t => t.enabled);
+
+  const cargosRows = hasCargos
     ? tot.cargosDesglose.map(c=>`
         <div class="tot-row">
-          <span><button class="iva-btn on">${c.label} ${c.tipo==='fijo'?'(fijo)':c.rate+'%'}</button></span>
-          <span style="font-family:'DM Mono',monospace">$${fmt(c.monto)}</span>
+          <span>
+            <button class="iva-btn${c.isOn?' on':''}" onclick="toggleCargo('${c.id}')" title="${c.isOn?'Quitar este cargo':'Aplicar este cargo'}">
+              ${c.isOn?'✓ ':''} ${c.label} ${c.tipo==='fijo'?'$'+c.rate:c.rate+'%'}
+            </button>
+          </span>
+          <span style="font-family:'DM Mono',monospace;color:${c.isOn?'var(--t1)':'var(--t3)'}">
+            ${c.isOn?'+$'+fmt(c.monto):'—'}
+          </span>
         </div>`).join('')
     : `<div class="tot-row">
-        <span><button class="iva-btn${OF.iva?' on':''}" id="iva-toggle-btn">${OF.iva?'✓ ':''} ${getActiveTaxLabel()} ${getActiveTaxRate()>0?getActiveTaxRate()+'%':''}</button></span>
-        <span id="iva-amount" style="font-family:'DM Mono',monospace;color:${OF.iva?'var(--t1)':'var(--t3)'}">${OF.iva?'$'+fmt(tot.iva):'—'}</span>
+        <span><button class="iva-btn" style="cursor:default;opacity:.4">Sin cargos configurados</button></span>
+        <span style="color:var(--t3)">—</span>
       </div>`;
 
   return`
@@ -2444,7 +2569,7 @@ function buildTotalsHTML(tot){
       <span style="font-family:'DM Mono',monospace;color:${tot.disc>0?'var(--red)':'var(--t3)'}">${tot.disc>0?'−$'+fmt(tot.disc):'—'}</span>
     </div>
     ${cargosRows}
-    <div class="tot-total"><span>Total</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.total)}&nbsp;${OF.moneda}</span></div>`;
+    <div class="tot-total"><span>Total</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.total)}&nbsp;<span style="font-size:10px;opacity:.6">${DEFAULT_MONEDA}</span></span></div>`;
 }
 function refreshTotals(){
   // Recompute each line via its strategy (respects manual override)
@@ -2522,7 +2647,7 @@ function buildPayHTML(total){
       }
       <div class="pay-balance" style="color:${balColor}">
         <span>${balLabel}</span>
-        <span style="font-family:'DM Mono',monospace">$${fmt(isPaid?0:Math.max(0,balance))}&nbsp;${OF.moneda}</span>
+        <span style="font-family:'DM Mono',monospace">$${fmt(isPaid?0:Math.max(0,balance))}&nbsp;${DEFAULT_MONEDA}</span>
       </div>
     </div>`;
 }
@@ -2534,7 +2659,7 @@ function togglePay(){
   // Focus monto input when opening
   if(_payOpen) setTimeout(()=>{ const m=$('pay-monto'); if(m)m.focus(); },60);
 }
-function addPago(){
+async function addPago(){
   // Ensure panel is open first so elements are in DOM
   if(!_payOpen){ _payOpen=true; const b=$('pay-body'); if(b)b.style.display='block'; }
   const montoEl=$('pay-monto');
@@ -2543,7 +2668,21 @@ function addPago(){
   if(monto<=0){ toast('Ingresa un monto válido'); montoEl.focus(); return; }
   const metodo=$('pay-metodo')?.value||'efectivo';
   const nota=$('pay-nota')?.value||'';
-  OF.pagos.push({monto,metodo,fecha:todayISO(),nota});
+
+  // Save to Supabase immediately if order already exists
+  let pagoId = null;
+  if(OF.id){
+    try{
+      const res = await sb('orden_pagos','','POST',{orden_id:OF.id, monto, metodo, fecha:todayISO(), nota});
+      pagoId = res?.[0]?.id || null;
+      // Also update the orden.pagado total
+      const newPagado = OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0), monto);
+      await sb('ordenes',`id=eq.${OF.id}`,'PATCH',{pagado:newPagado}).catch(()=>{});
+    }catch(e){ toast('Error guardando pago: '+e.message); return; }
+  }
+
+  OF.pagos.push({id:pagoId, monto, metodo, fecha:todayISO(), nota});
+  OF.pagado = OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
   _payOpen=true;
   // Auto-promote status when payment added
   if(OF.status==='cotizacion'){
@@ -2552,10 +2691,23 @@ function addPago(){
     if(sel)sel.value='confirmada';
   }
   refreshTotals();
-  // Clear inputs after re-render
   setTimeout(()=>{ const m=$('pay-monto'); if(m){m.value='';m.focus();} const n=$('pay-nota'); if(n)n.value=''; },80);
+  toast('Pago registrado ✓');
 }
-function remPago(i){OF.pagos.splice(i,1);_payOpen=true;refreshTotals();}
+
+async function remPago(i){
+  const p = OF.pagos[i];
+  if(p?.id && OF.id){
+    try{ await sb('orden_pagos',`id=eq.${p.id}`,'DELETE'); }catch(e){}
+    // Update pagado total
+    const newPagado = OF.pagos.filter((_,j)=>j!==i).reduce((s,x)=>s+(parseFloat(x.monto)||0),0);
+    await sb('ordenes',`id=eq.${OF.id}`,'PATCH',{pagado:newPagado}).catch(()=>{});
+  }
+  OF.pagos.splice(i,1);
+  OF.pagado = OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
+  _payOpen=true;
+  refreshTotals();
+}
 function showCobroModal(balance){
   closeModal();
   const cl=DATA.clientes.find(c=>c.id===OF.cliente_id);
@@ -2657,7 +2809,7 @@ async function saveOrder(){
   const imgJson = (OF.imagenes||[]).length ? JSON.stringify(OF.imagenes) : undefined;
   const base={
     cliente_id:OF.cliente_id||null, status:OF.status,
-    fecha_entrega:OF.fecha_entrega||null, notas:OF.notas, moneda:OF.moneda,
+    fecha_entrega:OF.fecha_entrega||null, notas:OF.notas, moneda:DEFAULT_MONEDA,
     descuento_pct:OF.descuento_pct, subtotal:tot.sub, total:tot.total,
     numero:OF.id?undefined:`ORD-${Date.now().toString(36).toUpperCase()}`,
   };
@@ -2712,10 +2864,18 @@ async function saveOrderLines(oid) {
       opciones_json: stratData,
     });
   }
-  if (OF.id) { try { await sb('orden_pagos', `orden_id=eq.${oid}`, 'DELETE'); } catch (e) {} }
-  for (const p of OF.pagos) {
-    try { await sb('orden_pagos', '', 'POST', { orden_id: oid, monto: p.monto, metodo: p.metodo, fecha: p.fecha, nota: p.nota }); } catch (e) {}
+  // Pagos: only save ones without an id (not yet persisted)
+  // Already-persisted pagos were saved immediately via addPago()
+  const newPagos = OF.pagos.filter(p => !p.id);
+  for (const p of newPagos) {
+    try {
+      const res = await sb('orden_pagos', '', 'POST', { orden_id: oid, monto: p.monto, metodo: p.metodo, fecha: p.fecha, nota: p.nota });
+      if (res?.[0]?.id) p.id = res[0].id;
+    } catch (e) {}
   }
+  // Update pagado total on the order
+  const totalPagado = OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
+  try { await sb('ordenes', `id=eq.${oid}`, 'PATCH', { pagado: totalPagado }); } catch(e) {}
 }
 
 // Restore strategy data when loading a saved order
@@ -2767,7 +2927,7 @@ function renderKanban() {
     { key:'confirmada',  label:'Confirmada',     color:'#ffb020' },
     { key:'en_produccion',label:'En producción', color:'#aa77ff' },
     { key:'lista',       label:'Lista',          color:'#3ddc84' },
-    { key:'entregada',   label:'Entregada',      color:'#555'    },
+    { key:'entregada',   label:'Entregada',      color:'#2a8c4e' },
   ];
 
   const colsHtml = cols.map(col => {
@@ -2775,19 +2935,17 @@ function renderKanban() {
     const cards = orders.map(o => {
       const cl = DATA.clientes.find(c => c.id === o.cliente_id);
       const total = parseFloat(o.total || 0);
+      const pagado = parseFloat(o.pagado || 0);
+      const cardColor = getOrderColor(o);
       const daysLeft = o.fecha_entrega
         ? Math.round((new Date(o.fecha_entrega) - new Date()) / 86400000)
         : null;
       const urgent = daysLeft !== null && daysLeft <= 1;
-      // Get product names for this order (from cached lines in opciones_json or producto_nombre)
-      // We don't have lines preloaded, but we can scan orden_lineas cache or just show from DATA
-      const prodNames = DATA.ordenes
-        .filter(x=>x.id===o.id)
-        .flatMap(()=>[]) // lines not preloaded at list level
-        .map(l=>l.producto_nombre).filter(Boolean);
+      const isDeliveredPaid = o.status==='entregada' && total>0 && pagado>=total-0.01;
+      const isDeliveredUnpaid = o.status==='entregada' && !(total>0 && pagado>=total-0.01);
       
       return `<div class="kanban-card"
-        style="${urgent?'border-color:var(--red);':''}"
+        style="${urgent?'border-color:var(--red);':isDeliveredPaid?'border-color:#1a5c32;background:rgba(26,92,50,0.08);':isDeliveredUnpaid?'border-color:#3ddc84;background:rgba(61,220,132,0.06);':''}"
         draggable="true"
         ondragstart="event.dataTransfer.setData('id','${o.id}');this.classList.add('drag-src')"
         ondragend="this.classList.remove('drag-src')"
@@ -2798,6 +2956,8 @@ function renderKanban() {
           <div style="font-size:9px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t2)">$${fmtS(total)}</div>
         </div>
         <div class="kanban-card-client">${clName(cl)}</div>
+        ${isDeliveredPaid?`<div style="margin-top:4px;font-size:9px;font-weight:800;color:#2a8c4e;background:rgba(26,92,50,0.2);border-radius:3px;padding:2px 6px;display:inline-block">✓ PAGADA</div>`:
+          isDeliveredUnpaid?`<div style="margin-top:4px;font-size:9px;font-weight:800;color:#3ddc84;background:rgba(61,220,132,0.15);border-radius:3px;padding:2px 6px;display:inline-block">⏳ COBRO PENDIENTE</div>`:''}
         ${o.notas?`<div style="font-size:10px;color:var(--t3);margin-top:2px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.notas)}</div>`:''}
         <div style="margin-top:5px;font-size:10px;color:var(--t3);line-height:1.4" id="klines-${o.id}">
           <span style="color:var(--t3);font-style:italic">Cargando...</span>
@@ -2983,7 +3143,7 @@ function printOrder() {
     ${OF.iva && tot.cargosDesglose?.length > 0
       ? tot.cargosDesglose.map(c=>`<div class="tot-row"><span>${esc(c.label)} (${c.tipo==='fijo'?'fijo':c.rate+'%'})</span><span>$${fmt(c.monto)}</span></div>`).join('')
       : OF.iva ? `<div class="tot-row"><span>${getActiveTaxLabel()} (${getActiveTaxRate()}%)</span><span>$${fmt(tot.iva)}</span></div>` : ''}
-    <div class="tot-final"><span>Total</span><span>$${fmt(tot.total)} ${OF.moneda}</span></div>
+    <div class="tot-final"><span>Total</span><span>$${fmt(tot.total)} ${DEFAULT_MONEDA}</span></div>
   </div>
   ${OF.notas?`<div class="notes"><strong>Notas:</strong> ${esc(OF.notas)}</div>`:''}
   ${paid>0||OF.pagos.length?`
@@ -3021,7 +3181,7 @@ Tu cotización de *${esc(BRAND.name || 'CraftCRM')}*:
 
 ${lines}
 
-${tot.disc > 0 ? `Descuento: -$${fmt(tot.disc)}\n` : ''}${OF.iva ? `${getActiveTaxLabel()}: $${fmt(tot.iva)}\n` : ''}_Total: *$${fmt(tot.total)} ${OF.moneda}*_
+${tot.disc > 0 ? `Descuento: -$${fmt(tot.disc)}\n` : ''}${OF.iva ? `${getActiveTaxLabel()}: $${fmt(tot.iva)}\n` : ''}_Total: *$${fmt(tot.total)} ${DEFAULT_MONEDA}*_
 
 ${OF.fecha_entrega ? `📅 Fecha de entrega: ${fmtDateES(OF.fecha_entrega)}` : ''}
 ${OF.notas ? `\n📝 ${OF.notas}` : ''}
@@ -3112,7 +3272,7 @@ function renderDayView(dateStr){
       ?`<div style="padding:40px 0;text-align:center;color:var(--t3);font-size:13px">Sin entregas este día</div>`
       :ords.map(o=>{
           const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
-          const sc=SC_HEX[o.status]||'#555';
+          const sc=getOrderColor(o);
           const total=parseFloat(o.total||0);
           return`<div class="order-row" onclick="openEditOrder('${o.id}')" style="border-left:3px solid ${sc}">
             <div style="flex:1;min-width:0">
@@ -3121,7 +3281,7 @@ function renderDayView(dateStr){
             </div>
             <div style="text-align:right;flex-shrink:0">
               <div style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(total)}</div>
-              <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:${sc}">${SL[o.status]||o.status}</div>
+              <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:${sc}">${getOrderLabel(o)}</div>
             </div>
           </div>`;
         }).join('')}
@@ -3159,7 +3319,7 @@ function buildMonthGrid(){
       </div>
       ${ords.slice(0,3).map(o=>{
         const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
-        const sc=SC_HEX[o.status]||'#555';
+        const sc=getOrderColor(o);
         return`<div class="cal-card" style="background:${sc}20;color:${sc};border-left:2px solid ${sc}"
           draggable="true"
           ondragstart="onCalDragStart(event,'${o.id}')"
@@ -3497,13 +3657,13 @@ function openClientProfile(id, forceTab){
     </div>
     ${pendOrds.length===0?`<div style="padding:14px 0;font-size:12px;color:var(--t3)">Sin órdenes activas</div>`
     :pendOrds.map(o=>{
-      const sc=SC_HEX[o.status]||'#555';
+      const sc=getOrderColor(o);
       const daysLeft=o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
       const urgentColor=daysLeft!==null&&daysLeft<0?'var(--red)':daysLeft!==null&&daysLeft<=3?'var(--amber)':null;
       return`<div class="pend-ord" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
         <div class="pend-ord-dot" style="background:${sc}"></div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700">${esc(o.numero||o.id.slice(0,8).toUpperCase())} <span style="font-size:10px;font-weight:600;color:${sc}">${esc(SL[o.status]||o.status)}</span></div>
+          <div style="font-size:12px;font-weight:700">${esc(o.numero||o.id.slice(0,8).toUpperCase())} <span style="font-size:10px;font-weight:600;color:${sc}">${esc(getOrderLabel(o))}</span></div>
           ${o.fecha_entrega?`<div style="font-size:11px;color:${urgentColor||'var(--t3)'};font-weight:${urgentColor?'700':'400'}">
             ${daysLeft<0?'⚠ '+Math.abs(daysLeft)+'d atrasado':daysLeft===0?'⚠ Hoy':daysLeft===1?'⏰ Mañana':fmtDateES(o.fecha_entrega)+' ('+daysLeft+'d)'}
           </div>`:''}
@@ -3514,11 +3674,11 @@ function openClientProfile(id, forceTab){
         </div>
       </div>`;}).join('')}
     ${pastOrds.length?`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px">Historial (${pastOrds.length})</div>
-    ${pastOrds.map(o=>{const sc=SC_HEX[o.status]||'#555';
+    ${pastOrds.map(o=>{const sc=getOrderColor(o);
       return`<div class="pend-ord" style="opacity:.7" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
         <div class="pend-ord-dot" style="background:${sc}"></div>
         <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-          <div style="font-size:10px;color:var(--t3)">${o.fecha_entrega?fmtDateES(o.fecha_entrega)+' · ':''}<span style="color:${sc}">${esc(SL[o.status]||o.status)}</span></div></div>
+          <div style="font-size:10px;color:var(--t3)">${o.fecha_entrega?fmtDateES(o.fecha_entrega)+' · ':''}<span style="color:${sc}">${esc(getOrderLabel(o))}</span></div></div>
         <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t3)">$${fmtS(parseFloat(o.total||0))}</div>
       </div>`;}).join('')}`:''}`;
 
@@ -3836,6 +3996,33 @@ function renderSettings(tab){
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-ghost" onclick="testMPConnection()" style="font-size:12px">Verificar conexión</button>
           <span id="mp-status" style="font-size:12px;display:flex;align-items:center;gap:5px;color:var(--t3)"></span>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:8px;margin-top:8px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:28px;height:28px;background:#006aff;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="white" width="15" height="15"><rect x="2" y="2" width="20" height="20" rx="4"/><rect x="7" y="7" width="10" height="10" rx="1.5" fill="#006aff"/></svg>
+          </div>
+          <div class="lbl" style="margin-bottom:0">Square — Sincronización</div>
+        </div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.6">
+          Importa clientes desde Square a tu CRM y sincroniza el estado de tus facturas automáticamente.
+          Requiere que hayas configurado tu <strong style="color:var(--t1)">Location ID</strong> en la pantalla de crear factura.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn btn-ghost" onclick="squareImportCustomers()" id="sq-import-btn" style="font-size:12px;gap:6px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Importar clientes de Square
+          </button>
+          <button class="btn btn-ghost" onclick="squareSyncInvoices()" id="sq-sync-btn" style="font-size:12px;gap:6px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+            Sync facturas Square → CRM
+          </button>
+        </div>
+        <div id="sq-settings-status" style="display:none;padding:8px 10px;border-radius:5px;font-size:11px;line-height:1.6;margin-top:4px"></div>
+        <div style="font-size:10px;color:var(--t3);margin-top:8px;line-height:1.5">
+          💡 <strong>Importar clientes:</strong> trae nombre, email y teléfono de todos tus clientes de Square y los agrega a CraftCRM (omite duplicados por email).<br>
+          💡 <strong>Sync facturas:</strong> revisa el estado de facturas Square y actualiza las órdenes locales (PAID → pagado, CANCELED → cancelada).
         </div>
       </div>
       <div style="background:var(--red-dim);border:1px solid rgba(255,69,69,.2);border-radius:var(--r);padding:12px;margin-top:8px">
@@ -5123,10 +5310,10 @@ function renderDashboard(){
     const daysLeft = o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
     const dayLabel = daysLeft===null?'':daysLeft<0?`${Math.abs(daysLeft)}d atrasado`:daysLeft===0?'Hoy':daysLeft===1?'Mañana':`${daysLeft}d`;
     return `<div class="urg-row" style="color:${color};border-left-color:${color}" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
-      <div class="opip" style="background:${SC_HEX[o.status]||'#555'};flex-shrink:0"></div>
+      <div class="opip" style="background:${getOrderColor(o)};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;color:var(--t1)">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-        <div style="font-size:10px;color:var(--t3)">${esc(clName(cl))} · ${esc(SL[o.status]||o.status)}</div>
+        <div style="font-size:10px;color:var(--t3)">${esc(clName(cl))} · ${esc(getOrderLabel(o))}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(parseFloat(o.total||0))}</div>
@@ -5187,12 +5374,12 @@ function renderDashboard(){
       <div class="dash-card-body">
         ${pendCob.length?`<div style="margin-bottom:7px">${pendCob.map(o=>{const d=parseFloat(o.total||0)-parseFloat(o.pagado||0);return`<div style="font-size:11px;color:var(--red);font-weight:700;padding:2px 0">⚠ $${fmtS(d)} pendiente de cobro</div>`;}).join('')}</div>`:''}
         ${actOrd.length?`<div style="margin-bottom:6px">${actOrd.slice(0,3).map(o=>{
-          const sc=SC_HEX[o.status]||'#555';
+          const sc=getOrderColor(o);
           const days=o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
           return`<div class="dash-ord-row" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60);event.stopPropagation()">
             <div style="width:5px;height:5px;border-radius:50%;background:${sc};flex-shrink:0"></div>
             <div style="flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-            <div style="color:${sc};font-size:10px">${esc(SL[o.status]||o.status)}</div>
+            <div style="color:${sc};font-size:10px">${esc(getOrderLabel(o))}</div>
             ${days!==null?`<div style="font-size:10px;font-weight:700;color:${days<0?'var(--red)':days<=3?'var(--amber)':'var(--t3)'};flex-shrink:0">${days<0?Math.abs(days)+'d atrás':days===0?'Hoy':days+'d'}</div>`:''}
           </div>`;}).join('')}
           ${actOrd.length>3?`<div style="font-size:10px;color:var(--t3);padding-top:3px">+${actOrd.length-3} más</div>`:''}</div>
@@ -5562,66 +5749,75 @@ function gcClose() {
 // ════════════════════════════════════════════════════════
 function renderTaxSettings(){
   const rows = TAX_CONFIG.map((t,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--s2);border:1px solid var(--border2);border-radius:6px;margin-bottom:6px;flex-wrap:wrap">
+    <div style="display:grid;grid-template-columns:auto 1fr auto auto auto auto;align-items:center;gap:8px;padding:10px 12px;background:var(--s2);border:1px solid var(--border2);border-radius:6px;margin-bottom:6px">
       <input type="checkbox" ${t.enabled?'checked':''}
-        onchange="TAX_CONFIG[${i}].enabled=this.checked;saveCargoToSupabase(TAX_CONFIG[${i}]);renderSettings('impuestos')"
-        style="width:15px;height:15px;cursor:pointer;accent-color:var(--acc);flex-shrink:0">
-      <input class="inp" value="${esc(t.label)}" placeholder="Nombre (ej: IVA, Tax, Shipping, CC Fee)"
-        style="flex:2;min-width:100px;font-size:12px" maxlength="30"
-        onchange="TAX_CONFIG[${i}].label=this.value.trim();saveCargoToSupabase(TAX_CONFIG[${i}])">
-      <select class="inp" style="flex:1;min-width:90px;font-size:11px;padding:4px 6px"
-        onchange="TAX_CONFIG[${i}].tipo=this.value;saveCargoToSupabase(TAX_CONFIG[${i}]);renderSettings('impuestos')">
-        <option value="porcentaje" ${(t.tipo||'porcentaje')==='porcentaje'?'selected':''}>% Porcentaje</option>
-        <option value="fijo" ${t.tipo==='fijo'?'selected':''}>$ Monto fijo</option>
+        title="${t.enabled?'Activo':'Inactivo'}"
+        onchange="TAX_CONFIG[${i}].enabled=this.checked;saveCargoToSupabase(TAX_CONFIG[${i}]);toast(TAX_CONFIG[${i}].label+(TAX_CONFIG[${i}].enabled?' activado':' desactivado'))"
+        style="width:16px;height:16px;cursor:pointer;accent-color:var(--acc);flex-shrink:0">
+      <input class="inp" value="${esc(t.label)}" placeholder="Nombre (ej: IVA 16%)"
+        style="font-size:12px;min-width:0" maxlength="30"
+        onblur="if(this.value.trim()){TAX_CONFIG[${i}].label=this.value.trim();saveCargoToSupabase(TAX_CONFIG[${i}])}">
+      <select class="inp" style="font-size:11px;padding:4px 6px;width:auto"
+        onchange="TAX_CONFIG[${i}].tipo=this.value;renderSettings('impuestos')">
+        <option value="porcentaje" ${(t.tipo||'porcentaje')==='porcentaje'?'selected':''}>%</option>
+        <option value="fijo" ${t.tipo==='fijo'?'selected':''}>$</option>
       </select>
-      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:3px">
         <input class="inp" type="number" min="0" step="0.01" value="${t.rate}"
-          style="width:68px;font-size:12px;text-align:right"
-          onchange="TAX_CONFIG[${i}].rate=parseFloat(this.value)||0;saveCargoToSupabase(TAX_CONFIG[${i}])">
-        <span style="font-size:12px;color:var(--t3)">${(t.tipo||'porcentaje')==='fijo'?DEFAULT_MONEDA:'%'}</span>
+          style="width:72px;font-size:12px;text-align:right"
+          onblur="TAX_CONFIG[${i}].rate=parseFloat(this.value)||0;saveCargoToSupabase(TAX_CONFIG[${i}]);toast('Guardado ✓')">
+        <span style="font-size:11px;color:var(--t3);white-space:nowrap">${(t.tipo||'porcentaje')==='fijo'?DEFAULT_MONEDA:'%'}</span>
       </div>
-      <select class="inp" style="flex:1;min-width:90px;font-size:11px;padding:4px 6px"
+      <select class="inp" style="font-size:11px;padding:4px 6px;width:auto"
         onchange="TAX_CONFIG[${i}].aplicar_a=this.value;saveCargoToSupabase(TAX_CONFIG[${i}])">
-        <option value="subtotal" ${(t.aplicar_a||'subtotal')==='subtotal'?'selected':''}>Sobre subtotal</option>
-        <option value="total" ${t.aplicar_a==='total'?'selected':''}>Sobre total</option>
+        <option value="subtotal" ${(t.aplicar_a||'subtotal')==='subtotal'?'selected':''}>s/ subtotal</option>
+        <option value="total" ${t.aplicar_a==='total'?'selected':''}>s/ total</option>
       </select>
-      <button class="btn-icon del" title="Eliminar" onclick="deleteCargoFromSupabase(TAX_CONFIG[${i}].id);TAX_CONFIG.splice(${i},1);renderSettings('impuestos')">
+      <button class="btn-icon del" title="Eliminar" onclick="if(confirm('¿Eliminar?')){deleteCargoFromSupabase(TAX_CONFIG[${i}].id);TAX_CONFIG.splice(${i},1);renderSettings('impuestos')}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>`).join('');
 
   return `<div class="card">
     <div class="lbl" style="margin-bottom:4px">Moneda global</div>
-    <div style="font-size:11px;color:var(--t3);margin-bottom:8px">Se aplica a todas las órdenes nuevas. Cambia una sola vez.</div>
-    <select class="inp" style="width:auto;font-size:12px;margin-bottom:16px"
-      onchange="saveConfigMoneda(this.value).then(()=>toast('Moneda guardada ✓'))">
-      <option value="USD" ${DEFAULT_MONEDA==='USD'?'selected':''}>🇺🇸 USD — Dólar americano</option>
-      <option value="MXN" ${DEFAULT_MONEDA==='MXN'?'selected':''}>🇲🇽 MXN — Peso mexicano</option>
-      <option value="CAD" ${DEFAULT_MONEDA==='CAD'?'selected':''}>🇨🇦 CAD — Dólar canadiense</option>
-      <option value="EUR" ${DEFAULT_MONEDA==='EUR'?'selected':''}>🇪🇺 EUR — Euro</option>
-      <option value="GBP" ${DEFAULT_MONEDA==='GBP'?'selected':''}>🇬🇧 GBP — Libra esterlina</option>
-    </select>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:10px;line-height:1.5">Se aplica a todas las órdenes. Se guarda en Supabase — igual en todos los dispositivos.</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <select class="inp" id="moneda-select" style="width:auto;font-size:13px;font-weight:600">
+        <option value="USD" ${DEFAULT_MONEDA==='USD'?'selected':''}>🇺🇸 USD — Dólar americano</option>
+        <option value="MXN" ${DEFAULT_MONEDA==='MXN'?'selected':''}>🇲🇽 MXN — Peso mexicano</option>
+        <option value="CAD" ${DEFAULT_MONEDA==='CAD'?'selected':''}>🇨🇦 CAD — Dólar canadiense</option>
+        <option value="EUR" ${DEFAULT_MONEDA==='EUR'?'selected':''}>🇪🇺 EUR — Euro</option>
+        <option value="GBP" ${DEFAULT_MONEDA==='GBP'?'selected':''}>🇬🇧 GBP — Libra esterlina</option>
+      </select>
+      <button class="btn btn-acc" style="font-size:12px" onclick="saveConfigMoneda(document.getElementById('moneda-select').value);toast('Moneda guardada ✓')">Guardar</button>
+    </div>
 
     <div class="lbl" style="margin-bottom:4px">Cargos adicionales</div>
     <div style="font-size:11px;color:var(--t3);margin-bottom:12px;line-height:1.6">
-      Agrega impuestos, envío, comisión de tarjeta, etc. Se guardan en Supabase y aplican globalmente.
+      Impuestos, envío, comisión de tarjeta, etc. Los cambios se guardan al salir del campo (Tab o click fuera).<br>
+      <span style="color:var(--amber)">⚠ Para persistir entre sesiones necesitas la tabla <code style="background:var(--s3);padding:1px 4px;border-radius:3px">cargos_config</code> en Supabase.</span>
     </div>
-    ${rows}
-    <button class="btn btn-ghost" style="font-size:12px;margin-top:6px;width:100%;justify-content:center"
-      onclick="addNuevoCargo()">
+    ${rows.length ? rows : '<div style="font-size:12px;color:var(--t3);padding:8px 0">Sin cargos — agrega uno abajo</div>'}
+    <button class="btn btn-acc" style="font-size:12px;margin-top:8px;width:100%;justify-content:center" onclick="addNuevoCargo()">
       + Agregar cargo
     </button>
     <div style="margin-top:14px;padding:10px 12px;background:var(--s3);border-radius:6px;font-size:11px;color:var(--t3);line-height:1.6">
-      💡 Solo los cargos activados (✓) se aplican en las órdenes. El primero activado se usa como impuesto principal en cotizaciones e impresión.
+      💡 Solo los cargos con ✓ se suman al total de las órdenes.
     </div>
   </div>`;
 }
 
 async function addNuevoCargo(){
-  const nuevo = {id:'new_'+Date.now(),label:'Impuesto',rate:0,enabled:false,tipo:'porcentaje',aplicar_a:'subtotal',orden:TAX_CONFIG.length};
-  await saveCargoToSupabase(nuevo);
+  const nuevo = {id:'new_'+Date.now(),label:'Nuevo cargo',rate:0,enabled:false,tipo:'porcentaje',aplicar_a:'subtotal',orden:TAX_CONFIG.length};
+  try {
+    await saveCargoToSupabase(nuevo);
+    toast('Cargo agregado ✓');
+  } catch(e) {
+    toast('Error al guardar: '+e.message);
+  }
   TAX_CONFIG.push(nuevo);
   renderSettings('impuestos');
+  setTimeout(()=>{ const m=$('main'); if(m) m.scrollTop = m.scrollHeight; }, 50);
 }
 
 // ════════════════════════════════════════════════════════
@@ -5710,20 +5906,12 @@ async function buildSquareInvoice(sqLocationId) {
       ${lineRows}
       <div style="display:flex;justify-content:space-between;padding-top:8px;font-size:13px;font-weight:700">
         <span>Total</span>
-        <span style="font-family:'DM Mono',monospace;color:var(--acc)">$${fmt(tot.total)} ${OF.moneda}</span>
+        <span style="font-family:'DM Mono',monospace;color:var(--acc)">$${fmt(tot.total)} ${DEFAULT_MONEDA}</span>
       </div>
     </div>
 
-    <div class="fld" style="margin-bottom:12px">
-      <div class="lbl">Moneda para Square</div>
-      <select class="inp" id="sq-currency" style="font-size:12px">
-        <option value="USD" selected>USD — Dólar americano</option>
-        <option value="MXN">MXN — Peso mexicano</option>
-        <option value="CAD">CAD — Dólar canadiense</option>
-        <option value="GBP">GBP — Libra esterlina</option>
-        <option value="EUR">EUR — Euro</option>
-      </select>
-      <div style="font-size:10px;color:var(--t3);margin-top:3px">Square procesa en la moneda de tu cuenta. Por default USD.</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:12px;padding:6px 10px;background:var(--s2);border-radius:5px">
+      Moneda: <strong style="color:var(--t1)">${DEFAULT_MONEDA}</strong> · Configurable en Ajustes → Impuestos
     </div>
 
     <div style="display:flex;gap:8px">
@@ -5745,7 +5933,7 @@ async function buildSquareInvoice(sqLocationId) {
 async function doCreateSquareInvoice() {
   const { sqLocationId, tot, cl, orderNum } = window._sqCtx || {};
   if (!sqLocationId) { toast('Error: sin Location ID'); return; }
-  const sqCurrency = document.getElementById('sq-currency')?.value || 'USD';
+  const sqCurrency = DEFAULT_MONEDA;
 
   const confirmBtn = document.getElementById('sq-confirm-btn');
   const statusEl = document.getElementById('sq-status');
@@ -5917,6 +6105,209 @@ async function doCreateSquareInvoice() {
   }
 }
 
+// ════════════════════════════════════════════════════════
+//  SQUARE — IMPORT CUSTOMERS
+// ════════════════════════════════════════════════════════
+async function squareImportCustomers() {
+  const sqLocationId = localStorage.getItem('sq_location_id') || '';
+  if (!sqLocationId) { showSquareSetupModal(); return; }
+
+  const btn = document.getElementById('sq-import-btn');
+  const statusEl = document.getElementById('sq-settings-status');
+  const showSt = (msg, color) => {
+    if (!statusEl) return;
+    statusEl.style.display = 'block';
+    statusEl.style.background = color === 'ok' ? 'var(--c2-dim)' : color === 'err' ? 'var(--red-dim)' : 'var(--s3)';
+    statusEl.style.border = `1px solid ${color === 'ok' ? 'rgba(61,220,132,.3)' : color === 'err' ? 'rgba(255,69,69,.3)' : 'var(--border2)'}`;
+    statusEl.style.color = color === 'ok' ? 'var(--c2)' : color === 'err' ? '#ff9999' : 'var(--t2)';
+    statusEl.innerHTML = msg;
+  };
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Importando...'; }
+  showSt('⏳ Consultando clientes en Square...', 'info');
+
+  const SQ = (path, method='GET', body) => fetch(`/api/square/v2${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  try {
+    // Fetch all customers from Square (paginated)
+    let allCustomers = [];
+    let cursor = null;
+    do {
+      const params = new URLSearchParams({ limit: '100' });
+      if (cursor) params.set('cursor', cursor);
+      const res = await SQ(`/customers?${params}`);
+      const data = await res.json();
+      if (!res.ok || data.errors) throw new Error(data.errors?.[0]?.detail || 'Error al obtener clientes');
+      if (data.customers?.length) allCustomers = allCustomers.concat(data.customers);
+      cursor = data.cursor || null;
+    } while (cursor);
+
+    if (!allCustomers.length) {
+      showSt('ℹ Square no tiene clientes registrados aún.', 'info');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Importar clientes de Square'; }
+      return;
+    }
+
+    // Build email set from existing local clients for dedup
+    const localEmails = new Set(DATA.clientes.map(c => (c.email || '').toLowerCase().trim()).filter(Boolean));
+
+    let imported = 0, skipped = 0, errors = 0;
+
+    for (const sc of allCustomers) {
+      const email = (sc.email_address || '').toLowerCase().trim();
+      const nombre = [sc.given_name, sc.family_name].filter(Boolean).join(' ').trim()
+        || sc.company_name || sc.id;
+
+      // Skip duplicates by email
+      if (email && localEmails.has(email)) { skipped++; continue; }
+
+      try {
+        const payload = {
+          nombre,
+          empresa: sc.company_name || '',
+          email: sc.email_address || '',
+          telefono: sc.phone_number || '',
+          notas: `Importado de Square — ID: ${sc.id}${sc.note ? '\n'+sc.note : ''}`,
+          square_customer_id: sc.id,
+        };
+        const result = await sb('clientes', '', 'POST', payload);
+        if (result && result[0]) {
+          DATA.clientes.push(result[0]);
+          if (email) localEmails.add(email);
+          imported++;
+        }
+      } catch(e) { errors++; }
+    }
+
+    showSt(
+      `✓ Importación completada — <strong>${imported} clientes nuevos</strong> importados` +
+      (skipped ? `, ${skipped} omitidos (ya existían)` : '') +
+      (errors ? `, <span style="color:var(--amber)">${errors} con error</span>` : ''),
+      'ok'
+    );
+    toast(`✓ ${imported} clientes importados de Square`);
+  } catch(err) {
+    showSt(`✗ Error: ${err.message}`, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Importar clientes de Square'; }
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  SQUARE — SYNC INVOICES → CRM ORDERS
+// ════════════════════════════════════════════════════════
+async function squareSyncInvoices() {
+  const sqLocationId = localStorage.getItem('sq_location_id') || '';
+  if (!sqLocationId) { showSquareSetupModal(); return; }
+
+  const btn = document.getElementById('sq-sync-btn');
+  const statusEl = document.getElementById('sq-settings-status');
+  const showSt = (msg, color) => {
+    if (!statusEl) return;
+    statusEl.style.display = 'block';
+    statusEl.style.background = color === 'ok' ? 'var(--c2-dim)' : color === 'err' ? 'var(--red-dim)' : 'var(--s3)';
+    statusEl.style.border = `1px solid ${color === 'ok' ? 'rgba(61,220,132,.3)' : color === 'err' ? 'rgba(255,69,69,.3)' : 'var(--border2)'}`;
+    statusEl.style.color = color === 'ok' ? 'var(--c2)' : color === 'err' ? '#ff9999' : 'var(--t2)';
+    statusEl.innerHTML = msg;
+  };
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando...'; }
+  showSt('⏳ Consultando facturas en Square...', 'info');
+
+  const SQ = (path, method='GET', body) => fetch(`/api/square/v2${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  // Map Square invoice status → CRM order status
+  const STATUS_MAP = {
+    'PAID':           'entregada',
+    'PAYMENT_PENDING':'confirmada',
+    'APPROVED':       'confirmada',
+    'SCHEDULED':      'confirmada',
+    'PARTIALLY_PAID': 'en_produccion',
+    'CANCELED':       'cancelada',
+    'FAILED':         'cancelada',
+    'DRAFT':          null, // no change
+    'UNPAID':         null, // no change
+  };
+
+  try {
+    // Fetch invoices for this location (last 200)
+    const body = {
+      location_id: sqLocationId,
+      limit: 200,
+    };
+    const res = await SQ('/invoices/search', 'POST', {
+      query: {
+        filter: { location_ids: [sqLocationId] },
+        sort: { field: 'INVOICE_SORT_DATE', order: 'DESC' },
+      },
+      limit: 200,
+    });
+    const data = await res.json();
+    if (!res.ok || data.errors) throw new Error(data.errors?.[0]?.detail || 'Error al obtener facturas');
+
+    const invoices = data.invoices || [];
+    if (!invoices.length) {
+      showSt('ℹ No se encontraron facturas en Square para esta ubicación.', 'info');
+      return;
+    }
+
+    let updated = 0, noMatch = 0, noChange = 0;
+    const log = [];
+
+    for (const inv of invoices) {
+      const sqStatus = inv.status;
+      const newStatus = STATUS_MAP[sqStatus];
+
+      // Try to match by invoice_number → orden.numero
+      const invNum = inv.invoice_number || '';
+      const localOrd = invNum ? DATA.ordenes.find(o =>
+        o.numero === invNum ||
+        o.numero === `ORD-${invNum}` ||
+        invNum === `ORD-${o.numero}`
+      ) : null;
+
+      if (!localOrd) { noMatch++; continue; }
+      if (!newStatus || localOrd.status === newStatus) { noChange++; continue; }
+
+      // Update order status in Supabase
+      try {
+        await sb('ordenes', `id=eq.${localOrd.id}`, 'PATCH', { status: newStatus });
+        localOrd.status = newStatus;
+        updated++;
+        log.push(`${invNum}: ${sqStatus} → <strong>${newStatus}</strong>`);
+      } catch(e) { /* continue */ }
+    }
+
+    const summary = `✓ Sync completado — <strong>${updated} orden${updated !== 1 ? 'es' : ''} actualizada${updated !== 1 ? 's' : ''}</strong>` +
+      (noChange ? `, ${noChange} sin cambios` : '') +
+      (noMatch ? `, ${noMatch} sin coincidencia local` : '');
+
+    showSt(
+      summary + (log.length ? `<div style="margin-top:8px;font-size:10px;color:var(--t3);line-height:1.8">${log.slice(0, 10).join('<br>')}</div>` : ''),
+      'ok'
+    );
+    if (updated > 0) {
+      toast(`✓ ${updated} orden${updated !== 1 ? 'es' : ''} sincronizada${updated !== 1 ? 's' : ''} con Square`);
+      // Refresh current page if showing orders
+      if (['ordenes','home','kanban'].includes(curPage)) navigate(curPage);
+    } else {
+      toast('Square — todo al día ✓');
+    }
+  } catch(err) {
+    showSt(`✗ Error: ${err.message}`, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg> Sync facturas Square → CRM'; }
+  }
+}
+
 // ── INIT ──
 window.addEventListener('DOMContentLoaded',()=>{
 
@@ -5924,12 +6315,6 @@ window.addEventListener('DOMContentLoaded',()=>{
 document.addEventListener('click', function(e){
   const tgt = e.target.closest('button');
   if(!tgt) return;
-  if(tgt.id === 'iva-toggle-btn'){
-    e.stopPropagation();
-    OF.iva = !OF.iva;
-    refreshTotals();
-    return;
-  }
   if(tgt.id === 'pay-add-btn'){
     e.stopPropagation();
     addPago();
