@@ -1519,12 +1519,21 @@ async function openEditOrder(id){
   try{lines=await sb('orden_lineas',`select=*&orden_id=eq.${id}&order=created_at`)||[];}catch(e){}
   try{pagos=await sb('orden_pagos',`select=*&orden_id=eq.${id}&order=created_at`)||[];}catch(e){}
   let imagenes=[];
-  try{const imgRaw=ord.imagenes_json;if(imgRaw)imagenes=typeof imgRaw==='string'?JSON.parse(imgRaw):imgRaw;}catch(e){}
+  let cargos_override={};
+  try{
+    const imgRaw=ord.imagenes_json;
+    if(imgRaw){
+      const parsed=typeof imgRaw==='string'?JSON.parse(imgRaw):imgRaw;
+      // Support both old format (array) and new format {imgs:[], co:{}}
+      if(Array.isArray(parsed)) imagenes=parsed;
+      else { imagenes=parsed.imgs||[]; cargos_override=parsed.co||{}; }
+    }
+  }catch(e){}
   OF={id,numero:ord.numero||'',cliente_id:ord.cliente_id||null,cliente_nombre:cl?.nombre||'',
     status:ord.status||'cotizacion',fecha_entrega:ord.fecha_entrega||defaultDelivery(),
     notas:ord.notas||'',moneda:DEFAULT_MONEDA,descuento_pct:parseFloat(ord.descuento_pct)||0,
     iva:ord.iva!==false,
-    cargos_override:{}, // per-cargo toggle: {cargoId: bool} — undefined means use cargo's own .enabled
+    cargos_override, // per-cargo toggle loaded from DB
     lines: hydrateLines(lines),
     pagos:pagos.map(p=>({id:p.id,monto:parseFloat(p.monto)||0,metodo:p.metodo||'efectivo',fecha:p.fecha||'',nota:p.nota||''})),
     pagado:parseFloat(ord.pagado||0),
@@ -2506,25 +2515,17 @@ function calcTotals() {
   let cargosTotal = 0;
   const cargosDesglose = [];
   TAX_CONFIG.filter(t => t.enabled).forEach(t => {
-    // Per-cargo override: if key exists use it, else default ON (OF.iva)
-    const cargoKey = String(t.id);
-    const isOn = (OF.cargos_override && cargoKey in OF.cargos_override)
-      ? OF.cargos_override[cargoKey]
-      : OF.iva;
-    if (!isOn) return;
+    const key = String(t.id);
+    // Default ON — only OFF if explicitly set false in override
+    const isOn = (OF.cargos_override && key in OF.cargos_override)
+      ? !!OF.cargos_override[key]
+      : true;
     const base = (t.aplicar_a === 'total') ? (after + cargosTotal) : after;
-    const monto = t.tipo === 'fijo' ? parseFloat(t.rate)||0 : base * (parseFloat(t.rate)||0) / 100;
-    cargosTotal += monto;
-    cargosDesglose.push({id: t.id, label: t.label, rate: t.rate, tipo: t.tipo, monto, isOn: true});
-  });
-  // Also include OFF cargos in desglose so they show as toggleable
-  TAX_CONFIG.filter(t => t.enabled).forEach(t => {
-    const cargoKey = String(t.id);
-    const isOn = (OF.cargos_override && cargoKey in OF.cargos_override)
-      ? OF.cargos_override[cargoKey]
-      : OF.iva;
-    if (isOn) return; // already included above
-    cargosDesglose.push({id: t.id, label: t.label, rate: t.rate, tipo: t.tipo, monto: 0, isOn: false});
+    const monto = isOn
+      ? (t.tipo === 'fijo' ? parseFloat(t.rate)||0 : base * (parseFloat(t.rate)||0) / 100)
+      : 0;
+    if (isOn) cargosTotal += monto;
+    cargosDesglose.push({ id: t.id, label: t.label, rate: t.rate, tipo: t.tipo, monto, isOn });
   });
   const iva = cargosDesglose.filter(c=>c.isOn)[0]?.monto || 0;
   return { sub, disc, after, iva, cargosDesglose, cargosTotal, total: after + cargosTotal };
@@ -2533,9 +2534,16 @@ function calcTotals() {
 function toggleCargo(cargoId) {
   if (!OF.cargos_override) OF.cargos_override = {};
   const key = String(cargoId);
-  const current = (key in OF.cargos_override) ? OF.cargos_override[key] : OF.iva;
+  const current = (key in OF.cargos_override) ? OF.cargos_override[key] : true;
   OF.cargos_override[key] = !current;
   refreshTotals();
+  // Persist immediately if order exists
+  if (OF.id) {
+    const hasImgs = (OF.imagenes||[]).length > 0;
+    const hasCo = Object.keys(OF.cargos_override).length > 0;
+    const imgJson = JSON.stringify({ imgs: OF.imagenes||[], co: OF.cargos_override });
+    sb('ordenes', `id=eq.${OF.id}`, 'PATCH', { imagenes_json: imgJson }).catch(()=>{});
+  }
 }
 
 function buildTotalsHTML(tot){
@@ -2799,14 +2807,37 @@ Gracias por su preferencia 🙌`;
   window.open(phone?`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
 }
 
-function markPaid(metodo){const tot=calcTotals();const paid=OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);const bal=tot.total-paid;if(bal<=0)return;OF.pagos.push({monto:parseFloat(bal.toFixed(2)),metodo,fecha:todayISO(),nota:'Liquidado'});_payOpen=true;refreshTotals();toast('Marcada como pagada ✓');}
+async function markPaid(metodo){
+  const tot=calcTotals();
+  const paid=OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
+  const bal=tot.total-paid;
+  if(bal<=0)return;
+  const pago={monto:parseFloat(bal.toFixed(2)),metodo,fecha:todayISO(),nota:'Liquidado'};
+  if(OF.id){
+    try{
+      const res=await sb('orden_pagos','','POST',{orden_id:OF.id,...pago});
+      if(res?.[0]?.id) pago.id=res[0].id;
+      await sb('ordenes',`id=eq.${OF.id}`,'PATCH',{pagado:paid+pago.monto}).catch(()=>{});
+    }catch(e){ toast('Error: '+e.message); return; }
+  }
+  OF.pagos.push(pago);
+  OF.pagado=OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
+  _payOpen=true;
+  refreshTotals();
+  toast('Marcada como pagada ✓');
+}
 
 // ── SAVE ORDER ──
 // Tries progressively stripped payloads to handle DB schemas that may lack iva/pagado columns
 async function saveOrder(){
   const tot=calcTotals();
   const paid=OF.pagos.reduce((s,p)=>s+(parseFloat(p.monto)||0),0);
-  const imgJson = (OF.imagenes||[]).length ? JSON.stringify(OF.imagenes) : undefined;
+  // Pack imagenes + cargos_override into imagenes_json
+  const hasImgs = (OF.imagenes||[]).length > 0;
+  const hasCo = Object.keys(OF.cargos_override||{}).length > 0;
+  const imgJson = (hasImgs || hasCo)
+    ? JSON.stringify({ imgs: OF.imagenes||[], co: OF.cargos_override||{} })
+    : undefined;
   const base={
     cliente_id:OF.cliente_id||null, status:OF.status,
     fecha_entrega:OF.fecha_entrega||null, notas:OF.notas, moneda:DEFAULT_MONEDA,
