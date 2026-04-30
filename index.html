@@ -4299,11 +4299,9 @@ function addUserCat(){
 
 
 // ════════════════════════════════════════════════════════
-//  SUPABASE STORAGE — upload image, get public URL
+//  SUPABASE STORAGE — upload image, get public URL (legacy fallback)
 // ════════════════════════════════════════════════════════
 async function uploadToStorage(file, path){
-  // Requires a public bucket called 'craftcrm' in your Supabase project
-  // Create it: Storage → New bucket → name: craftcrm → Public: ON
   const formData = new FormData();
   formData.append('', file);
   const url = `${SB_URL}/storage/v1/object/craftcrm/${path}`;
@@ -4314,7 +4312,6 @@ async function uploadToStorage(file, path){
   });
   if(!r.ok){
     const e = await r.json().catch(()=>({message:r.status}));
-    // If already exists, try upsert
     if(r.status === 400 || r.status === 409){
       const r2 = await fetch(url, {
         method: 'PUT',
@@ -4329,21 +4326,77 @@ async function uploadToStorage(file, path){
   return `${SB_URL}/storage/v1/object/public/craftcrm/${path}`;
 }
 
-async function uploadBase64ToStorage(base64DataUrl, path){
-  // Convert base64 data URL to blob and upload
-  const res = await fetch(base64DataUrl);
-  const blob = await res.blob();
-  const file = new File([blob], path.split('/').pop(), { type: blob.type });
-  return uploadToStorage(file, path);
+// ════════════════════════════════════════════════════════
+//  GOOGLE DRIVE — image upload & public URL
+// ════════════════════════════════════════════════════════
+const GD_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+let _gdToken = null;
+let _gdTokenExpiry = 0;
+
+function gdAuth(callback) {
+  // Reuse token if still valid (expires in ~1h, we refresh after 55min)
+  if (_gdToken && Date.now() < _gdTokenExpiry) { callback(null, _gdToken); return; }
+  try {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GC_CLIENT_ID, // reuse same OAuth client
+      scope: GD_SCOPE,
+      callback: (resp) => {
+        if (resp.error) { callback(new Error(resp.error)); return; }
+        _gdToken = resp.access_token;
+        _gdTokenExpiry = Date.now() + 55 * 60 * 1000; // 55 min
+        callback(null, _gdToken);
+      },
+    });
+    client.requestAccessToken({ prompt: '' }); // '' = silent if already consented
+  } catch(e) { callback(e); }
+}
+
+// Returns a promise that resolves to the public URL of the uploaded image
+async function uploadToDrive(file) {
+  return new Promise((resolve, reject) => {
+    gdAuth(async (err, token) => {
+      if (err) { reject(err); return; }
+      try {
+        // 1. Create file in Drive (multipart upload)
+        const metadata = {
+          name: `craftcrm_${Date.now()}_${file.name.replace(/[^a-z0-9._-]/gi,'_')}`,
+          mimeType: file.type,
+          parents: [] // uploads to root; could specify a folder ID here
+        };
+
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', file);
+
+        const uploadRes = await fetch(
+          'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webContentLink,webViewLink',
+          { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form }
+        );
+        if (!uploadRes.ok) {
+          const e = await uploadRes.json().catch(()=>({}));
+          throw new Error(e.error?.message || 'Drive upload error: ' + uploadRes.status);
+        }
+        const driveFile = await uploadRes.json();
+        const fileId = driveFile.id;
+
+        // 2. Make file publicly readable
+        await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: 'reader', type: 'anyone' })
+        });
+
+        // 3. Return direct-download URL (renders inline in <img>)
+        const publicUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+        resolve(publicUrl);
+      } catch(e) { reject(e); }
+    });
+  });
 }
 
 // ════════════════════════════════════════════════════════
 //  ORDER IMAGES — general images attached to an order
 // ════════════════════════════════════════════════════════
-// Images stored in OF.imagenes = [{url, caption, uploaded_at}]
-// Saved in ordenes.notas_json or as a separate text column
-// Strategy: store in opciones_json on a special "meta" line, or
-// better: store in ordenes table as imagenes_json column (with fallback)
 
 function showOrderImagesModal(){
   closeModal();
@@ -4354,26 +4407,37 @@ function showOrderImagesModal(){
 
   const buildContent = () => {
     const imgGrid = imgs.length ? imgs.map((img,i) => `
-      <div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">
-        <img src="${esc(img.url)}" style="width:100%;height:100px;object-fit:cover;display:block"
-             onerror="this.parentElement.style.display='none'">
-        ${img.caption ? `<div style="font-size:10px;color:var(--t3);padding:4px 6px;background:var(--s2)">${esc(img.caption)}</div>` : ''}
-        <button onclick="removeOrderImage(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:11px">✕</button>
-      </div>`).join('') : `<div style="color:var(--t3);font-size:12px;text-align:center;padding:20px">Sin imágenes adjuntas</div>`;
+      <div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--s2)">
+        <img src="${esc(img.url)}" style="width:100%;height:100px;object-fit:cover;display:block;cursor:pointer"
+             onclick="window.open('${esc(img.url)}','_blank')"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div style="display:none;width:100%;height:100px;align-items:center;justify-content:center;font-size:22px">🖼️</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;background:var(--s2)">
+          <span style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px" title="${esc(img.caption||'')}">
+            ${img.source==='drive' ? '<span title="Google Drive" style="margin-right:2px">☁️</span>' : ''}${esc(img.caption||'sin nombre')}
+          </span>
+          <button onclick="removeOrderImage(${i})" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 2px;flex-shrink:0" title="Eliminar">✕</button>
+        </div>
+      </div>`).join('') : `<div style="color:var(--t3);font-size:12px;text-align:center;padding:20px 0">Sin imágenes adjuntas</div>`;
 
-    return `<div class="modal" onclick="event.stopPropagation()" style="max-width:480px">
+    return `<div class="modal" onclick="event.stopPropagation()" style="max-width:500px">
       <div class="modal-title">Imágenes de la orden</div>
       <div class="modal-sub">Fotos de referencia, diseños, muestras. Aparecen en el PDF.</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">${imgGrid}</div>
       <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
         <div class="lbl">Agregar imagen</div>
-        <input type="file" id="ord-img-file" accept="image/*" multiple
-          style="font-size:12px;color:var(--t2)"
-          onchange="addOrderImagesFromFile(this)">
+        <div style="display:flex;gap:6px;align-items:center">
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s2);border:1px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--t2);transition:border-color .15s" onmouseover="this.style.borderColor='var(--acc)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span id="ord-file-label">Subir desde dispositivo → Google Drive</span>
+            <input type="file" id="ord-img-file" accept="image/*" multiple style="display:none" onchange="addOrderImagesFromFile(this)">
+          </label>
+        </div>
         <div style="display:flex;gap:6px">
-          <input class="inp" id="ord-img-url" placeholder="O pega una URL..." style="font-size:12px">
+          <input class="inp" id="ord-img-url" placeholder="O pega una URL de imagen..." style="font-size:12px">
           <button class="btn btn-ghost" onclick="addOrderImageFromUrl()" style="flex-shrink:0">Agregar</button>
         </div>
+        <div id="ord-img-status" style="display:none;font-size:11px;padding:7px 10px;border-radius:5px;border:1px solid var(--border2)"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="closeModal()">Listo</button>
@@ -4387,38 +4451,57 @@ function showOrderImagesModal(){
 
 function refreshOrderImagesModal(){
   const modal = document.querySelector('#cmodal .modal');
-  if(modal) {
-    const imgs = OF.imagenes || [];
-    showOrderImagesModal();
-  }
+  if(modal) showOrderImagesModal();
+}
+
+function _ordImgStatus(msg, type) {
+  const el = document.getElementById('ord-img-status');
+  if (!el) return;
+  el.style.display = msg ? 'block' : 'none';
+  el.style.background = type==='ok' ? 'var(--c2-dim)' : type==='err' ? 'var(--red-dim)' : 'var(--s3)';
+  el.style.color = type==='ok' ? 'var(--c2)' : type==='err' ? 'var(--red)' : 'var(--t2)';
+  el.innerHTML = msg;
 }
 
 async function addOrderImagesFromFile(input){
   const files = Array.from(input.files);
   if(!files.length) return;
-  toast('Subiendo imágenes...', 8000);
+
+  const labelEl = document.getElementById('ord-file-label');
+  if(labelEl) labelEl.textContent = `Subiendo ${files.length} imagen${files.length>1?'es':''}...`;
+  _ordImgStatus('⏳ Conectando con Google Drive...', 'info');
+
+  let uploaded = 0, failed = 0;
   for(const file of files){
     try{
-      const ordId = OF.id || ('tmp_' + Date.now());
-      const path = `orders/${ordId}/${Date.now()}_${file.name.replace(/[^a-z0-9._-]/gi,'_')}`;
-      let url;
+      let url, source;
       try{
-        url = await uploadToStorage(file, path);
-      } catch(e){
-        // Fallback: convert to base64 and store inline (no storage bucket needed)
+        _ordImgStatus(`⏳ Subiendo a Google Drive: ${file.name}`, 'info');
+        url = await uploadToDrive(file);
+        source = 'drive';
+        uploaded++;
+      } catch(driveErr){
+        // Fallback: base64 inline (no internet needed)
+        console.warn('Drive upload failed, using base64 fallback:', driveErr.message);
         url = await new Promise((res,rej) => {
           const r = new FileReader();
           r.onload = e => res(e.target.result);
           r.onerror = rej;
           r.readAsDataURL(file);
         });
+        source = 'local';
+        uploaded++;
       }
       if(!OF.imagenes) OF.imagenes = [];
-      OF.imagenes.push({ url, caption: file.name.replace(/\.[^.]+$/,''), uploaded_at: todayISO() });
-    } catch(e){ toast('Error: ' + e.message); }
+      OF.imagenes.push({ url, caption: file.name.replace(/\.[^.]+$/,''), uploaded_at: todayISO(), source });
+    } catch(e){ failed++; console.error(e); }
   }
-  toast('Imágenes agregadas ✓');
-  showOrderImagesModal(); // refresh modal
+
+  if(failed > 0) _ordImgStatus(`⚠ ${uploaded} subida${uploaded!==1?'s':''}, ${failed} error${failed!==1?'es':''}`, 'err');
+  else _ordImgStatus(`✓ ${uploaded} imagen${uploaded!==1?'es':''} subida${uploaded!==1?'s':''} a Google Drive`, 'ok');
+
+  // Small delay so user can see the success msg, then refresh
+  setTimeout(() => showOrderImagesModal(), 900);
 }
 
 function addOrderImageFromUrl(){
@@ -5541,6 +5624,7 @@ function dashFilterPicker(q){
 // ════════════════════════════════════════════════════════
 const GC_CLIENT_ID = '921894159659-f28bl8jcn0h2hdbarosqtltrk6en36do.apps.googleusercontent.com';
 const GC_SCOPE = 'https://www.googleapis.com/auth/contacts.readonly';
+// Drive scope is requested separately by gdAuth() — same client ID, different scope
 let _gcToken = null;
 let _gcContacts = [];
 let _gcFiltered = [];
