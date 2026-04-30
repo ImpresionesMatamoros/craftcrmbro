@@ -4333,53 +4333,84 @@ const GD_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 let _gdToken = null;
 let _gdTokenExpiry = 0;
 
-function gdAuth(callback) {
-  if (_gdToken && Date.now() < _gdTokenExpiry) { callback(null, _gdToken); return; }
-  try {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: GC_CLIENT_ID,
-      scope: GD_SCOPE,
-      callback: (resp) => {
-        if (resp.error) { callback(new Error(resp.error)); return; }
-        _gdToken = resp.access_token;
-        _gdTokenExpiry = Date.now() + 55 * 60 * 1000;
-        callback(null, _gdToken);
-      },
-    });
-    client.requestAccessToken({ prompt: '' });
-  } catch(e) { callback(e); }
+// ── Google Drive OAuth via redirect (no popup, works everywhere) ──────────────
+// Flow: button click → redirect to Google → Google redirects back with #access_token
+// We store the token in localStorage and restore state after redirect.
+
+function gdGetTokenFromHash() {
+  // Parse access_token from URL hash after OAuth redirect
+  const hash = window.location.hash;
+  if (!hash) return null;
+  const params = new URLSearchParams(hash.replace('#', '?'));
+  const token = params.get('access_token');
+  const expiresIn = parseInt(params.get('expires_in') || '3600');
+  if (!token) return null;
+  const expiry = Date.now() + (expiresIn - 60) * 1000;
+  localStorage.setItem('gd_token', token);
+  localStorage.setItem('gd_token_expiry', String(expiry));
+  // Clean up the hash so it doesn't persist
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+  return token;
 }
 
-// Called directly from button click — opens OAuth popup synchronously,
-// then opens the file picker once we have a token
+function gdLoadToken() {
+  if (_gdToken && Date.now() < _gdTokenExpiry) return _gdToken;
+  const stored = localStorage.getItem('gd_token');
+  const expiry = parseInt(localStorage.getItem('gd_token_expiry') || '0');
+  if (stored && Date.now() < expiry) {
+    _gdToken = stored;
+    _gdTokenExpiry = expiry;
+    return stored;
+  }
+  return null;
+}
+
+function gdAuth(callback) {
+  const token = gdLoadToken();
+  if (token) { callback(null, token); return; }
+  // No valid token — caller must use gdAuthRedirect() from a button click
+  callback(new Error('no_token'));
+}
+
+function gdAuthRedirect() {
+  // Save current page state so we can restore after redirect
+  localStorage.setItem('gd_return', 'images_modal');
+  const params = new URLSearchParams({
+    client_id: GC_CLIENT_ID,
+    redirect_uri: window.location.origin + window.location.pathname,
+    response_type: 'token',
+    scope: GD_SCOPE,
+    include_granted_scopes: 'true',
+  });
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
 function gdAuthThenPickFiles() {
-  if (_gdToken && Date.now() < _gdTokenExpiry) {
-    // Already authorized — open file picker directly
+  const token = gdLoadToken();
+  if (token) {
     document.getElementById('ord-img-file')?.click();
     return;
   }
-  _ordImgStatus('⏳ Conectando con Google Drive...', 'info');
-  try {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: GC_CLIENT_ID,
-      scope: GD_SCOPE,
-      callback: (resp) => {
-        if (resp.error) {
-          _ordImgStatus('✗ No se pudo conectar con Google Drive', 'err');
-          return;
-        }
-        _gdToken = resp.access_token;
-        _gdTokenExpiry = Date.now() + 55 * 60 * 1000;
-        _ordImgStatus('✓ Conectado — selecciona las imágenes', 'ok');
-        // Now open file picker — user gesture is still live after token callback
-        document.getElementById('ord-img-file')?.click();
-      },
-    });
-    client.requestAccessToken({ prompt: '' });
-  } catch(e) {
-    _ordImgStatus('✗ Error: ' + e.message, 'err');
-  }
+  // No token — redirect to Google
+  gdAuthRedirect();
 }
+
+// On page load: check if we're returning from OAuth redirect
+(function gdHandleReturn() {
+  const token = gdGetTokenFromHash();
+  if (!token) return;
+  _gdToken = token;
+  _gdTokenExpiry = parseInt(localStorage.getItem('gd_token_expiry') || '0');
+  const returnTo = localStorage.getItem('gd_return');
+  localStorage.removeItem('gd_return');
+  if (returnTo === 'images_modal') {
+    // Re-open the images modal and auto-open file picker
+    setTimeout(() => {
+      showOrderImagesModal();
+      setTimeout(() => document.getElementById('ord-img-file')?.click(), 200);
+    }, 400);
+  }
+})();
 
 // Returns a promise that resolves to the public URL of the uploaded image
 async function uploadToDrive(file) {
