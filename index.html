@@ -688,20 +688,29 @@ select.lf-inp{cursor:pointer;}
 
 /* ══ DASHBOARD ══ */
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;}
-.dash-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .15s;display:flex;flex-direction:column;}
-.dash-card:hover{border-color:var(--border3);}
-.dash-card-head{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer;}
-.dash-card-avatar{width:30px;height:30px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--acc);flex-shrink:0;}
+.dash-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;}
+.dash-card:hover{border-color:var(--border3);box-shadow:0 4px 20px rgba(0,0,0,.25);}
+.dash-card-cover{width:100%;height:88px;object-fit:cover;display:block;background:var(--s2);}
+.dash-card-cover-placeholder{width:100%;height:88px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--border3);}
+.dash-card-head{display:flex;align-items:center;gap:10px;padding:9px 13px 8px;border-bottom:1px solid var(--border);cursor:pointer;}
+.dash-card-avatar{width:32px;height:32px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--acc);flex-shrink:0;overflow:hidden;border:2px solid var(--border2);}
+.dash-card-avatar img{width:100%;height:100%;object-fit:cover;}
 .dash-card-name{font-size:13px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.dash-card-sub{font-size:10px;color:var(--t3);}
+.dash-card-sub{font-size:10px;color:var(--t3);margin-top:1px;}
 .dash-card-body{padding:8px 13px;flex:1;}
+.dash-freq-badge{display:inline-block;font-size:8px;font-weight:800;padding:1px 5px;border-radius:8px;background:rgba(var(--c1-rgb),.15);color:var(--c1);text-transform:uppercase;letter-spacing:.04em;margin-left:4px;vertical-align:middle;}
 .dash-note-row{padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;line-height:1.4;color:var(--t2);}
 .dash-note-row:last-child{border-bottom:none;}
 .dash-note-tag{display:inline-block;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;margin-right:4px;text-transform:uppercase;vertical-align:middle;}
-.dash-ord-row{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.dash-ord-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;cursor:pointer;border-radius:3px;transition:background .1s;}
+.dash-ord-row:hover{background:var(--s2);}
 .dash-ord-row:last-child{border-bottom:none;}
-.dash-add-card{background:transparent;border:2px dashed var(--border2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;min-height:110px;cursor:pointer;transition:all .15s;color:var(--t3);font-size:12px;font-weight:600;gap:7px;}
+.dash-ord-thumb{width:28px;height:28px;border-radius:4px;object-fit:cover;flex-shrink:0;}
+.dash-ord-thumb-ph{width:28px;height:28px;border-radius:4px;background:var(--s3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;}
+.dash-add-card{background:transparent;border:2px dashed var(--border2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;min-height:140px;cursor:pointer;transition:all .15s;color:var(--t3);font-size:12px;font-weight:600;gap:7px;}
 .dash-add-card:hover{border-color:var(--border3);color:var(--t2);background:var(--s1);}
+.cp-avatar-photo{width:100%;height:100%;object-fit:cover;}
+.cp-last-seen{font-size:10px;color:var(--t3);margin-top:2px;}
 .dash-remove-btn{width:22px;height:22px;border-radius:50%;background:transparent;border:1px solid var(--border2);color:var(--t3);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s;}
 .dash-remove-btn:hover{background:rgba(255,69,69,.15);border-color:var(--red);color:var(--red);}
 /* Urgency section */
@@ -3634,6 +3643,19 @@ function openClientProfile(id, forceTab){
 
   const ini = (c?.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
 
+  // Client photo = most recent image from any of their orders
+  const allClientImgs = ords.flatMap(o=>{
+    try{ const j=JSON.parse(o.imagenes_json||'{}'); return j.imgs||[]; }catch(e){ return []; }
+  });
+  const clientPhoto = allClientImgs.length ? allClientImgs[allClientImgs.length-1].url : null;
+  const isFrequent = ords.length >= 3;
+  const lastOrd = ords.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''))[0];
+  const lastSeenStr = lastOrd ? (() => {
+    const d = new Date(lastOrd.created_at||lastOrd.fecha_creacion||Date.now());
+    const days = Math.round((new Date()-d)/86400000);
+    return days===0?'Activo hoy':days===1?'Ayer':days<7?`Hace ${days} días`:days<30?`Hace ${Math.round(days/7)} sem`:`Hace ${Math.round(days/30)} mes${Math.round(days/30)!==1?'es':''}`;
+  })() : null;
+
   // ── TAB: actividad ──
   // NOTE_CFG lives globally (defined in dashboard section)
 
@@ -3711,7 +3733,15 @@ function openClientProfile(id, forceTab){
         <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
           <div style="font-size:10px;color:var(--t3)">${o.fecha_entrega?fmtDateES(o.fecha_entrega)+' · ':''}<span style="color:${sc}">${esc(getOrderLabel(o))}</span></div></div>
         <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t3)">$${fmtS(parseFloat(o.total||0))}</div>
-      </div>`;}).join('')}`:''}`;
+      </div>`;}).join('')}`:''}
+    ${allClientImgs.length?`
+    <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 10px">📸 Galería del cliente (${allClientImgs.length})</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+      ${allClientImgs.slice().reverse().map(img=>`
+        <div style="border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer" onclick="window.open('${esc(img.url)}','_blank')">
+          <img src="${esc(img.url)}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.style.display='none'">
+        </div>`).join('')}
+    </div>`:''}`;
 
   // ── TAB: datos ──
   const datosHtml = `
@@ -3738,10 +3768,16 @@ function openClientProfile(id, forceTab){
       </button>
     </div>
     <div style="display:flex;align-items:center;gap:14px;padding:8px 26px 0">
-      <div class="cp-avatar">${ini}</div>
+      <div class="cp-avatar" style="width:58px;height:58px;font-size:20px;">
+        ${clientPhoto ? `<img class="cp-avatar-photo" src="${clientPhoto}" onerror="this.outerHTML='${ini}'">` : ini}
+      </div>
       <div style="flex:1;min-width:0">
-        <div class="cp-name">${c?esc(clName(c)):'Nuevo cliente'}</div>
+        <div class="cp-name">
+          ${c?esc(clName(c)):'Nuevo cliente'}
+          ${isFrequent?'<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(var(--c1-rgb),.15);color:var(--c1);margin-left:6px;vertical-align:middle">★ Frecuente</span>':''}
+        </div>
         ${c?.empresa?`<div class="cp-company">${esc(c.empresa)}</div>`:''}
+        ${lastSeenStr?`<div class="cp-last-seen">⏱ ${lastSeenStr}</div>`:''}
         ${c?.telefono||c?.email?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
           ${c.telefono?`<a href="tel:${esc(c.telefono)}" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px">📞 Llamar</a>
           <a href="https://wa.me/${esc((c.telefono||'').replace(/[^0-9]/g,''))}" target="_blank" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px;color:#25d366;border-color:rgba(37,211,102,.3)">WhatsApp</a>`:''}
@@ -5446,16 +5482,44 @@ function renderDashboard(){
     const ini=(cl.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const ords=DATA.ordenes.filter(o=>o.cliente_id===cid);
     const actOrd=ords.filter(o=>!['entregada','cancelada'].includes(o.status));
-    const notes=getClNotes(cid).slice(0,3);
-    const total=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+    const notes=getClNotes(cid).slice(0,2);
+    const isFrequent = ords.length >= 3;
+
+    // Client photo = most recent image from any order
+    const allImgs = ords.flatMap(o=>{
+      try{ const j=JSON.parse(o.imagenes_json||'{}'); return j.imgs||[]; }catch(e){ return []; }
+    });
+    const clientPhoto = allImgs.length ? allImgs[allImgs.length-1].url : null;
+
+    // Cover = most recent image from active orders
+    const activeImgs = actOrd.flatMap(o=>{
+      try{ const j=JSON.parse(o.imagenes_json||'{}'); return j.imgs||[]; }catch(e){ return []; }
+    });
+    const coverImg = activeImgs.length ? activeImgs[activeImgs.length-1].url : null;
+
+    // Last seen = last order date
+    const lastOrd = ords.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''))[0];
+    const lastSeen = lastOrd ? (() => {
+      const d = new Date(lastOrd.created_at||lastOrd.fecha_creacion||Date.now());
+      const days = Math.round((now-d)/86400000);
+      return days===0?'Hoy':days===1?'Ayer':`hace ${days}d`;
+    })() : null;
+
     const pendCob=ords.filter(o=>{if(o.status!=='entregada')return false;const t=parseFloat(o.total||0),p=parseFloat(o.pagado||0);return t>0&&p<t-0.01;});
 
+    const avatarHtml = clientPhoto
+      ? `<div class="dash-card-avatar"><img src="${clientPhoto}" onerror="this.parentElement.innerHTML='${ini}'"></div>`
+      : `<div class="dash-card-avatar">${ini}</div>`;
+
     return `<div class="dash-card">
+      ${coverImg
+        ? `<img class="dash-card-cover" src="${coverImg}" onerror="this.outerHTML='<div class=dash-card-cover-placeholder>📦</div>'" onclick="navigate('clients');setTimeout(()=>openClientProfile('${cid}'),60)" style="cursor:pointer">`
+        : actOrd.length ? `<div class="dash-card-cover-placeholder" onclick="navigate('clients');setTimeout(()=>openClientProfile('${cid}'),60)" style="cursor:pointer">📦</div>` : ''}
       <div class="dash-card-head" onclick="navigate('clients');setTimeout(()=>openClientProfile('${cid}'),60)">
-        <div class="dash-card-avatar">${ini}</div>
+        ${avatarHtml}
         <div style="flex:1;min-width:0">
-          <div class="dash-card-name">${esc(clName(cl))}</div>
-          <div class="dash-card-sub">${actOrd.length?`${actOrd.length} pendiente${actOrd.length!==1?'s':''}`:esc(cl.empresa||'Sin órdenes activas')}</div>
+          <div class="dash-card-name">${esc(clName(cl))}${isFrequent?'<span class="dash-freq-badge">★ Frecuente</span>':''}</div>
+          <div class="dash-card-sub">${actOrd.length?`${actOrd.length} pendiente${actOrd.length!==1?'s':''}`:esc(cl.empresa||'Sin órdenes activas')}${lastSeen?` · ${lastSeen}`:''}</div>
         </div>
         <button class="dash-remove-btn" title="Quitar del dashboard" onclick="dashRemovePin('${cid}',event)">×</button>
       </div>
@@ -5464,10 +5528,17 @@ function renderDashboard(){
         ${actOrd.length?`<div style="margin-bottom:6px">${actOrd.slice(0,3).map(o=>{
           const sc=getOrderColor(o);
           const days=o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
+          let imgs=[];try{const j=JSON.parse(o.imagenes_json||'{}');imgs=j.imgs||[];}catch(e){}
+          const thumb=imgs.length?imgs[imgs.length-1].url:null;
+          const label=getOrderLabel(o);
           return`<div class="dash-ord-row" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60);event.stopPropagation()">
-            <div style="width:5px;height:5px;border-radius:50%;background:${sc};flex-shrink:0"></div>
-            <div style="flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-            <div style="color:${sc};font-size:10px">${esc(getOrderLabel(o))}</div>
+            ${thumb
+              ? `<img class="dash-ord-thumb" src="${thumb}" onerror="this.outerHTML='<div class=dash-ord-thumb-ph>📷</div>'">`
+              : `<div class="dash-ord-thumb-ph" style="background:${sc}22"><div style="width:6px;height:6px;border-radius:50%;background:${sc}"></div></div>`}
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t1)">${esc(label||o.numero||o.id.slice(0,8).toUpperCase())}</div>
+              <div style="font-size:10px;color:var(--t3)">${esc(o.numero||'')}${o.numero&&days!==null?' · ':''}</div>
+            </div>
             ${days!==null?`<div style="font-size:10px;font-weight:700;color:${days<0?'var(--red)':days<=3?'var(--amber)':'var(--t3)'};flex-shrink:0">${days<0?Math.abs(days)+'d atrás':days===0?'Hoy':days+'d'}</div>`:''}
           </div>`;}).join('')}
           ${actOrd.length>3?`<div style="font-size:10px;color:var(--t3);padding-top:3px">+${actOrd.length-3} más</div>`:''}</div>
@@ -5490,6 +5561,7 @@ function renderDashboard(){
       </div>
     </div>`;
   };
+
 
   // ── Add-pin picker
   const unpinned = DATA.clientes.filter(c=>!_dashPins.includes(c.id));
