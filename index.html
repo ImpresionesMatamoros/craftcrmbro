@@ -4329,130 +4329,25 @@ async function uploadToStorage(file, path){
 // ════════════════════════════════════════════════════════
 //  GOOGLE DRIVE — image upload & public URL
 // ════════════════════════════════════════════════════════
-const GD_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-let _gdToken = null;
-let _gdTokenExpiry = 0;
+// ════════════════════════════════════════════════════════
+//  CLOUDINARY — upload image, get persistent public URL
+// ════════════════════════════════════════════════════════
+const CL_CLOUD  = 'dzajhvx5z';
+const CL_PRESET = 'CraftPreset';
+const CL_UPLOAD = `https://api.cloudinary.com/v1_1/${CL_CLOUD}/image/upload`;
 
-// ── Google Drive OAuth via redirect (no popup, works everywhere) ──────────────
-// Flow: button click → redirect to Google → Google redirects back with #access_token
-// We store the token in localStorage and restore state after redirect.
-
-function gdGetTokenFromHash() {
-  // Parse access_token from URL hash after OAuth redirect
-  const hash = window.location.hash;
-  if (!hash) return null;
-  const params = new URLSearchParams(hash.replace('#', '?'));
-  const token = params.get('access_token');
-  const expiresIn = parseInt(params.get('expires_in') || '3600');
-  if (!token) return null;
-  const expiry = Date.now() + (expiresIn - 60) * 1000;
-  localStorage.setItem('gd_token', token);
-  localStorage.setItem('gd_token_expiry', String(expiry));
-  // Clean up the hash so it doesn't persist
-  history.replaceState(null, '', window.location.pathname + window.location.search);
-  return token;
-}
-
-function gdLoadToken() {
-  if (_gdToken && Date.now() < _gdTokenExpiry) return _gdToken;
-  const stored = localStorage.getItem('gd_token');
-  const expiry = parseInt(localStorage.getItem('gd_token_expiry') || '0');
-  if (stored && Date.now() < expiry) {
-    _gdToken = stored;
-    _gdTokenExpiry = expiry;
-    return stored;
+async function uploadToCloudinary(file) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('upload_preset', CL_PRESET);
+  form.append('folder', 'craftcrm');
+  const res = await fetch(CL_UPLOAD, { method: 'POST', body: form });
+  if (!res.ok) {
+    const e = await res.json().catch(()=>({}));
+    throw new Error(e.error?.message || 'Cloudinary error: ' + res.status);
   }
-  return null;
-}
-
-function gdAuth(callback) {
-  const token = gdLoadToken();
-  if (token) { callback(null, token); return; }
-  // No valid token — caller must use gdAuthRedirect() from a button click
-  callback(new Error('no_token'));
-}
-
-function gdAuthRedirect() {
-  // Save current page state so we can restore after redirect
-  localStorage.setItem('gd_return', 'images_modal');
-  const params = new URLSearchParams({
-    client_id: GC_CLIENT_ID,
-    redirect_uri: window.location.origin + window.location.pathname,
-    response_type: 'token',
-    scope: GD_SCOPE,
-    include_granted_scopes: 'true',
-  });
-  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-}
-
-function gdAuthThenPickFiles() {
-  const token = gdLoadToken();
-  if (token) {
-    document.getElementById('ord-img-file')?.click();
-    return;
-  }
-  // No token — redirect to Google
-  gdAuthRedirect();
-}
-
-// On page load: check if we're returning from OAuth redirect
-(function gdHandleReturn() {
-  const token = gdGetTokenFromHash();
-  if (!token) return;
-  _gdToken = token;
-  _gdTokenExpiry = parseInt(localStorage.getItem('gd_token_expiry') || '0');
-  const returnTo = localStorage.getItem('gd_return');
-  localStorage.removeItem('gd_return');
-  if (returnTo === 'images_modal') {
-    // Re-open the images modal and auto-open file picker
-    setTimeout(() => {
-      showOrderImagesModal();
-      setTimeout(() => document.getElementById('ord-img-file')?.click(), 200);
-    }, 400);
-  }
-})();
-
-// Returns a promise that resolves to the public URL of the uploaded image
-async function uploadToDrive(file) {
-  return new Promise((resolve, reject) => {
-    gdAuth(async (err, token) => {
-      if (err) { reject(err); return; }
-      try {
-        // 1. Create file in Drive (multipart upload)
-        const metadata = {
-          name: `craftcrm_${Date.now()}_${file.name.replace(/[^a-z0-9._-]/gi,'_')}`,
-          mimeType: file.type,
-          parents: [] // uploads to root; could specify a folder ID here
-        };
-
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        form.append('file', file);
-
-        const uploadRes = await fetch(
-          'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webContentLink,webViewLink',
-          { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form }
-        );
-        if (!uploadRes.ok) {
-          const e = await uploadRes.json().catch(()=>({}));
-          throw new Error(e.error?.message || 'Drive upload error: ' + uploadRes.status);
-        }
-        const driveFile = await uploadRes.json();
-        const fileId = driveFile.id;
-
-        // 2. Make file publicly readable
-        await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-          method: 'POST',
-          headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role: 'reader', type: 'anyone' })
-        });
-
-        // 3. Return direct-download URL (renders inline in <img>)
-        const publicUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-        resolve(publicUrl);
-      } catch(e) { reject(e); }
-    });
-  });
+  const data = await res.json();
+  return data.secure_url;
 }
 
 // ════════════════════════════════════════════════════════
@@ -4475,7 +4370,7 @@ function showOrderImagesModal(){
         <div style="display:none;width:100%;height:100px;align-items:center;justify-content:center;font-size:22px">🖼️</div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;background:var(--s2)">
           <span style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px" title="${esc(img.caption||'')}">
-            ${img.source==='drive' ? '<span title="Google Drive" style="margin-right:2px">☁️</span>' : ''}${esc(img.caption||'sin nombre')}
+            ${img.source==='cloudinary' ? '<span title="Cloudinary" style="margin-right:2px">☁️</span>' : ''}${esc(img.caption||'sin nombre')}
           </span>
           <button onclick="removeOrderImage(${i})" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 2px;flex-shrink:0" title="Eliminar">✕</button>
         </div>
@@ -4488,12 +4383,11 @@ function showOrderImagesModal(){
       <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
         <div class="lbl">Agregar imagen</div>
         <div style="display:flex;gap:6px;align-items:center">
-          <button class="btn btn-ghost" style="flex:1;justify-content:center;gap:8px;padding:9px 12px;font-size:12px;border-style:dashed"
-            onclick="gdAuthThenPickFiles()">
+          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 12px;background:var(--s2);border:1px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--t2)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Subir a Google Drive
-          </button>
-          <input type="file" id="ord-img-file" accept="image/*" multiple style="display:none" onchange="addOrderImagesFromFile(this)">
+            Subir imágenes
+            <input type="file" id="ord-img-file" accept="image/*" multiple style="display:none" onchange="addOrderImagesFromFile(this)">
+          </label>
         </div>
         <div style="display:flex;gap:6px">
           <input class="inp" id="ord-img-url" placeholder="O pega una URL de imagen..." style="font-size:12px">
@@ -4529,22 +4423,20 @@ async function addOrderImagesFromFile(input){
   const files = Array.from(input.files);
   if(!files.length) return;
 
-  const labelEl = document.getElementById('ord-file-label');
-  if(labelEl) labelEl.textContent = `Subiendo ${files.length} imagen${files.length>1?'es':''}...`;
-  _ordImgStatus('⏳ Conectando con Google Drive...', 'info');
+  _ordImgStatus(`⏳ Subiendo ${files.length} imagen${files.length>1?'es':''}...`, 'info');
 
   let uploaded = 0, failed = 0;
   for(const file of files){
     try{
       let url, source;
       try{
-        _ordImgStatus(`⏳ Subiendo a Google Drive: ${file.name}`, 'info');
-        url = await uploadToDrive(file);
-        source = 'drive';
+        _ordImgStatus(`⏳ Subiendo: ${file.name}`, 'info');
+        url = await uploadToCloudinary(file);
+        source = 'cloudinary';
         uploaded++;
-      } catch(driveErr){
-        // Fallback: base64 inline (no internet needed)
-        console.warn('Drive upload failed, using base64 fallback:', driveErr.message);
+      } catch(clErr){
+        // Fallback: base64 inline
+        console.warn('Cloudinary upload failed, using base64 fallback:', clErr.message);
         url = await new Promise((res,rej) => {
           const r = new FileReader();
           r.onload = e => res(e.target.result);
@@ -4559,10 +4451,9 @@ async function addOrderImagesFromFile(input){
     } catch(e){ failed++; console.error(e); }
   }
 
-  if(failed > 0) _ordImgStatus(`⚠ ${uploaded} subida${uploaded!==1?'s':''}, ${failed} error${failed!==1?'es':''}`, 'err');
-  else _ordImgStatus(`✓ ${uploaded} imagen${uploaded!==1?'es':''} subida${uploaded!==1?'s':''} a Google Drive`, 'ok');
+  if(failed > 0) _ordImgStatus(`⚠ ${uploaded} subida${uploaded!==1?'s':''}, ${failed} fallaron`, 'err');
+  else _ordImgStatus(`✓ ${uploaded} imagen${uploaded!==1?'es':''} subida${uploaded!==1?'s':''} correctamente`, 'ok');
 
-  // Small delay so user can see the success msg, then refresh
   setTimeout(() => showOrderImagesModal(), 900);
 }
 
