@@ -1194,6 +1194,75 @@ function loadUserCats(){
   if(!Array.isArray(USER_CATS)||USER_CATS.length===0)USER_CATS=[];
 }
 function saveUserCats(){localStorage.setItem('craftcrm_cats',JSON.stringify(USER_CATS));}
+// ════════════════════════════════════════════════════════
+//  AUTO-CATEGORIZATION RULES ENGINE
+// ════════════════════════════════════════════════════════
+const RULES_KEY = 'craftcrm_auto_rules';
+
+function loadAutoRules() {
+  try { return JSON.parse(localStorage.getItem(RULES_KEY)||'[]'); } catch(e) { return []; }
+}
+function saveAutoRules(rules) { localStorage.setItem(RULES_KEY, JSON.stringify(rules)); }
+
+function addAutoRule() {
+  const rules = loadAutoRules();
+  rules.push({ keyword: '', category: USER_CATS[0]?.name||'general' });
+  saveAutoRules(rules);
+  renderSettings('reglas');
+}
+function updateAutoRule(i, field, value) {
+  const rules = loadAutoRules();
+  if(rules[i]) { rules[i][field] = value; saveAutoRules(rules); }
+}
+function deleteAutoRule(i) {
+  const rules = loadAutoRules();
+  rules.splice(i, 1);
+  saveAutoRules(rules);
+}
+
+// Returns the matching category name or null
+function applyAutoRules(productName) {
+  const rules = loadAutoRules();
+  const name = (productName||'').toLowerCase();
+  for(const r of rules) {
+    if(r.keyword && name.includes(r.keyword.toLowerCase())) return r.category;
+  }
+  return null;
+}
+
+function testAutoRules() {
+  const inp = document.getElementById('rule-test-inp');
+  const result = document.getElementById('rule-test-result');
+  if(!inp||!result) return;
+  const name = inp.value.trim();
+  if(!name) { result.textContent = 'Escribe un nombre para probar'; result.style.color='var(--t3)'; return; }
+  const cat = applyAutoRules(name);
+  if(cat) {
+    result.innerHTML = `✓ Coincide → <strong style="color:var(--acc)">${esc(cat)}</strong>`;
+    result.style.color = 'var(--c2)';
+  } else {
+    result.textContent = '— Sin coincidencia, no se cambiaría la categoría';
+    result.style.color = 'var(--t3)';
+  }
+}
+
+async function applyAllAutoRules() {
+  const rules = loadAutoRules();
+  if(!rules.length) { toast('Sin reglas configuradas'); return; }
+  let changed = 0;
+  for(const p of DATA.productos) {
+    const newCat = applyAutoRules(p.nombre);
+    if(newCat && newCat !== p.categoria) {
+      try {
+        await sb('productos', `id=eq.${p.id}`, 'PATCH', { categoria: newCat });
+        p.categoria = newCat;
+        changed++;
+      } catch(e) {}
+    }
+  }
+  toast(`✓ ${changed} producto${changed!==1?'s':''} re-categorizados`);
+  renderSettings('reglas');
+}
 function getCatNames(){return USER_CATS.map(c=>c.name).filter(Boolean);}
 // For backward compat with product forms
 const CATS=new Proxy([],{get:(t,k)=>{const cats=getCatNames();if(k==='length')return cats.length;if(!isNaN(k))return cats[k];return cats[k];}});
@@ -1486,20 +1555,55 @@ function showOrderCtxMenu(e, ordId) {
   menu.id = 'ctx-menu';
   menu.style.cssText = `position:fixed;top:${Math.min(e.clientY,window.innerHeight-160)}px;left:${Math.min(e.clientX,window.innerWidth-200)}px;
     background:var(--s3);border:1px solid var(--border3);border-radius:8px;box-shadow:var(--shadow2);z-index:400;min-width:190px;overflow:hidden;padding:4px 0;`;
+  const phone = (cl?.telefono||'').replace(/[^0-9]/g,'');
   menu.innerHTML = `
-    <div style="padding:7px 14px 5px;font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border)">${esc(o?.numero || ordId.slice(0,8))}</div>
+    <div style="padding:7px 14px 5px;font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span>${esc(o?.numero || ordId.slice(0,8))}</span>
+      <span style="color:${getOrderColor(o)};font-size:9px">${esc(getOrderLabel(o))}</span>
+    </div>
     <div class="ctx-item" onclick="closeCtxMenu();openEditOrder('${ordId}')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Editar
+      Editar orden
     </div>
     <div class="ctx-item" onclick="closeCtxMenu();duplicateOrder('${ordId}')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       Duplicar orden
     </div>
-    ${cl?.telefono ? `<div class="ctx-item" onclick="closeCtxMenu();quickWhatsapp('${ordId}')" style="color:#25d366">
+    ${o?.cliente_id ? `<div class="ctx-item" onclick="closeCtxMenu();openNewOrderForClient('${o.cliente_id}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nueva orden para ${esc(clName(cl)||'este cliente')}
+    </div>
+    <div class="ctx-item" onclick="closeCtxMenu();navigate('clients');setTimeout(()=>openClientProfile('${o.cliente_id}'),60)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Ir al cliente
+    </div>` : ''}
+    <div style="border-top:1px solid var(--border);margin:3px 0"></div>
+    <div class="ctx-item" onclick="closeCtxMenu();dashQuickStatus('${ordId}','lista')" style="color:var(--c2)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+      Marcar como lista
+    </div>
+    <div class="ctx-item" onclick="closeCtxMenu();dashQuickStatus('${ordId}','entregada')" style="color:var(--acc)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Marcar como entregada
+    </div>
+    ${phone ? `<div style="border-top:1px solid var(--border);margin:3px 0"></div>
+    <div class="ctx-item" onclick="closeCtxMenu();quickWhatsapp('${ordId}')" style="color:#25d366">
       <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.553 4.122 1.523 5.855L.057 23.492a.5.5 0 00.541.633l5.939-1.556A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.034-1.389l-.36-.215-3.733.979.996-3.638-.235-.374A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
       WhatsApp
-    </div>` : ''}`;
+    </div>
+    <a class="ctx-item" href="sms:${phone}" style="text-decoration:none;color:var(--t1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Mensaje (iMessage/SMS)
+    </a>
+    <a class="ctx-item" href="tel:${phone}" style="text-decoration:none;color:var(--t1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.18 2 2 0 015.08 6h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.91 13a16 16 0 006.29 6.29l.41-.41a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      Llamar
+    </a>` : ''}
+    <div style="border-top:1px solid var(--border);margin:3px 0"></div>
+    <div class="ctx-item" onclick="closeCtxMenu();if(confirm('¿Eliminar esta orden?'))deleteOrder('${ordId}')" style="color:var(--red)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Eliminar orden
+    </div>`;
   document.body.appendChild(menu);
   setTimeout(() => document.addEventListener('click', closeCtxMenu, { once: true }), 10);
 }
@@ -3238,6 +3342,7 @@ ${OF.notas ? `\n📝 ${OF.notas}` : ''}
 }
 let CAL={view:'month', year:new Date().getFullYear(), month:new Date().getMonth(), draggingId:null, dayView:null};
 
+let CAL_SHOW_DONE = false;
 function renderCalendar(){
   if(CAL.dayView){renderDayView(CAL.dayView);return;}
   const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -3247,7 +3352,10 @@ function renderCalendar(){
       <span class="cal-title">${months[CAL.month]} ${CAL.year}</span>
       <button class="btn btn-ghost" onclick="calNav(1)">›</button>
       <button class="btn btn-ghost" onclick="CAL.year=new Date().getFullYear();CAL.month=new Date().getMonth();CAL.dayView=null;renderCalendar()" style="font-size:11px">Hoy</button>
-      <span style="font-size:10px;color:var(--t3);margin-left:8px">Click derecho en día para opciones · Doble click para ver detalle</span>
+      <button class="btn btn-ghost" onclick="CAL_SHOW_DONE=!CAL_SHOW_DONE;renderCalendar()" style="font-size:11px;padding:4px 10px;${CAL_SHOW_DONE?'background:var(--c2-dim);color:var(--c2);border-color:rgba(61,220,132,.3)':''}" title="Mostrar/ocultar entregadas pagadas">
+        ${CAL_SHOW_DONE?'✓ Con terminadas':'○ Solo activas'}
+      </button>
+      <span style="font-size:10px;color:var(--t3);margin-left:4px">Click derecho en día para opciones</span>
       <button class="btn btn-acc" onclick="openNewOrder()" style="margin-left:auto;font-size:12px;padding:6px 12px">+ Nueva orden</button>
     </div>
     <div class="cal-grid-wrap" id="cal-grid">${buildMonthGrid()}</div>
@@ -3288,6 +3396,16 @@ function showCalContextMenu(e,dateStr){
   setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
 }
 function closeCtxMenu(){document.getElementById('ctx-menu')?.remove();}
+
+async function dashQuickStatus(ordId, newStatus) {
+  try {
+    await sb('ordenes', `id=eq.${ordId}`, 'PATCH', { status: newStatus });
+    const ord = DATA.ordenes.find(o=>o.id===ordId);
+    if(ord) ord.status = newStatus;
+    toast(newStatus==='lista'?'✓ Marcada como lista':'★ Marcada como entregada');
+    renderDashboard();
+  } catch(e) { toast('Error: ' + e.message); }
+}
 
 function openNewOrderForDate(dateStr){
   OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',fecha_entrega:dateStr,notas:'',moneda:DEFAULT_MONEDA,descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
@@ -3338,7 +3456,13 @@ function buildMonthGrid(){
   const daysInMonth=new Date(year,month+1,0).getDate();
   const days=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   const delivCounts={};
-  DATA.ordenes.forEach(o=>{if(o.fecha_entrega&&!['entregada','cancelada'].includes(o.status))delivCounts[o.fecha_entrega.slice(0,10)]=(delivCounts[o.fecha_entrega.slice(0,10)]||0)+1;});
+  DATA.ordenes.forEach(o=>{
+    if(!o.fecha_entrega) return;
+    const isActive = !['entregada','cancelada'].includes(o.status);
+    const isDonePaid = o.status==='entregada' && parseFloat(o.pagado||0)>=parseFloat(o.total||0)-0.01;
+    if(isActive || (CAL_SHOW_DONE && isDonePaid))
+      delivCounts[o.fecha_entrega.slice(0,10)]=(delivCounts[o.fecha_entrega.slice(0,10)]||0)+1;
+  });
   let hdr=`<div class="cal-month-grid" style="margin-bottom:4px">`;
   days.forEach(d=>hdr+=`<div style="font-size:10px;color:var(--t3);font-weight:700;text-align:center;padding:4px 0">${d}</div>`);
   hdr+='</div>';
@@ -3346,7 +3470,12 @@ function buildMonthGrid(){
   for(let i=0;i<startDow;i++)grid+=`<div class="cal-month-cell" style="opacity:.2"></div>`;
   for(let d=1;d<=daysInMonth;d++){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const ords=DATA.ordenes.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===ds);
+    const ords=DATA.ordenes.filter(o=>{
+      if(!o.fecha_entrega||o.fecha_entrega.slice(0,10)!==ds) return false;
+      const isActive=!['entregada','cancelada'].includes(o.status);
+      const isDonePaid=o.status==='entregada'&&parseFloat(o.pagado||0)>=parseFloat(o.total||0)-0.01;
+      return isActive||(CAL_SHOW_DONE&&isDonePaid);
+    });
     const cnt=delivCounts[ds]||0;
     const isToday=ds===todayStr;
     grid+=`<div class="cal-month-cell${isToday?' today-col':''}" data-date="${ds}"
@@ -3511,7 +3640,14 @@ function renderProductForm(p){
 }
 function matRow(i){const m=_pMats[i];return`<div style="display:grid;grid-template-columns:1fr 80px 80px 22px;gap:6px;margin-bottom:6px"><input class="inp" style="font-size:12px" placeholder="Material" value="${esc(m.nombre||'')}" onchange="_pMats[${i}].nombre=this.value"><input class="inp" style="font-size:12px" type="number" placeholder="Costo" value="${m.costo_unitario||0}" onchange="_pMats[${i}].costo_unitario=parseFloat(this.value)||0"><input class="inp" style="font-size:12px" type="number" placeholder="Cant." value="${m.cantidad_necesaria||1}" onchange="_pMats[${i}].cantidad_necesaria=parseFloat(this.value)||1"><button class="btn-icon del" onclick="_pMats.splice(${i},1);$('mat-list').innerHTML=_pMats.length?_pMats.map((_,j)=>matRow(j)).join(''):'<div style=font-size:12px;color:var(--t3)>Sin materiales</div>'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;}
 function addMat(){_pMats.push({nombre:'',costo_unitario:0,cantidad_necesaria:1});$('mat-list').innerHTML=_pMats.map((_,i)=>matRow(i)).join('');}
-async function saveProd(id){const d={nombre:$('pf-n').value,categoria:$('pf-cat').value,produccion:$('pf-prod').value,tipo_precio:_pF.tipo_precio||'fijo',precio_base:parseFloat($('pf-price').value)||0,stock:parseInt($('pf-stock').value)||0,notas:$('pf-notes')?.value||'',materiales_json:_pMats};try{if(id)await sb('productos',`id=eq.${id}`,'PATCH',d);else await sb('productos','','POST',d);await loadAll();toast('Guardado ✓');renderProducts();}catch(e){toast('Error: '+e.message);}}
+async function saveProd(id){
+  const nombre = $('pf-n').value;
+  // Auto-apply categorization rules if no manual category was chosen (new product)
+  let categoria = $('pf-cat').value;
+  if(!id) { const autoCat = applyAutoRules(nombre); if(autoCat) categoria = autoCat; }
+  const d={nombre,categoria,produccion:$('pf-prod').value,tipo_precio:_pF.tipo_precio||'fijo',precio_base:parseFloat($('pf-price').value)||0,stock:parseInt($('pf-stock').value)||0,notas:$('pf-notes')?.value||'',materiales_json:_pMats};
+  try{if(id)await sb('productos',`id=eq.${id}`,'PATCH',d);else await sb('productos','','POST',d);await loadAll();toast('Guardado ✓');renderProducts();}catch(e){toast('Error: '+e.message);}
+}
 async function delProd(id){if(!confirm('¿Eliminar?'))return;try{await sb('productos',`id=eq.${id}`,'DELETE');await loadAll();renderProducts();}catch(e){}}
 
 // ══════════════════════════════════════
@@ -3780,6 +3916,7 @@ function openClientProfile(id, forceTab){
         ${lastSeenStr?`<div class="cp-last-seen">⏱ ${lastSeenStr}</div>`:''}
         ${c?.telefono||c?.email?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
           ${c.telefono?`<a href="tel:${esc(c.telefono)}" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px">📞 Llamar</a>
+          <a href="sms:${esc((c.telefono||'').replace(/[^0-9]/g,''))}" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px">💬 Mensaje</a>
           <a href="https://wa.me/${esc((c.telefono||'').replace(/[^0-9]/g,''))}" target="_blank" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px;color:#25d366;border-color:rgba(37,211,102,.3)">WhatsApp</a>`:''}
           ${c.email?`<a href="mailto:${esc(c.email)}" class="btn btn-ghost" style="font-size:11px;text-decoration:none;padding:4px 10px">✉ Email</a>`:''}
         </div>`:''}
@@ -3909,7 +4046,7 @@ let _settingsTab='branding'; // 'branding' | 'theme' | 'categories' | 'data' | '
 
 function renderSettings(tab){
   if(tab)_settingsTab=tab;
-  const tabs=[['branding','Marca'],['theme','Tema'],['categories','Categorías'],['impuestos','Impuestos'],['data','Datos'],['seguridad','Seguridad'],['db','Base de datos']];
+  const tabs=[['branding','Marca'],['theme','Tema'],['categories','Categorías'],['reglas','Reglas'],['impuestos','Impuestos'],['data','Datos'],['seguridad','Seguridad'],['db','Base de datos']];
   const swatches=ACCENT_PRESETS.map(h=>`<div class="swatch${BRAND.accentHex===h?' on':''}" style="background:${h}" data-hex="${h}" onclick="setAccent('${h}')" title="${h}"></div>`).join('');
 
   $('main').innerHTML=`<div class="page page-sm">
@@ -4099,7 +4236,44 @@ function renderSettings(tab){
       </div>
     </div>`:
 
-    _settingsTab==='seguridad'?`
+    _settingsTab==='reglas'?`
+    <div class="card" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div class="lbl" style="margin-bottom:2px">Reglas de auto-categorización</div>
+          <div style="font-size:11px;color:var(--t3)">Si el nombre del producto contiene esta palabra → asigna esta categoría automáticamente</div>
+        </div>
+        <button class="btn btn-acc" onclick="addAutoRule()" style="font-size:11px;padding:4px 12px;flex-shrink:0">+ Regla</button>
+      </div>
+      <div id="rules-list">
+        ${(loadAutoRules()).map((r,i)=>`
+          <div style="display:grid;grid-template-columns:1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center">
+            <input class="inp" style="font-size:12px" placeholder="Contiene..." value="${esc(r.keyword)}" oninput="updateAutoRule(${i},'keyword',this.value)">
+            <select class="inp" style="font-size:12px" onchange="updateAutoRule(${i},'category',this.value)">
+              ${USER_CATS.map(c=>`<option value="${c.name}"${r.category===c.name?' selected':''}>${c.name}</option>`).join('')}
+            </select>
+            <button class="btn-icon del" onclick="deleteAutoRule(${i});renderSettings('reglas')" title="Eliminar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>`).join('')}
+        ${loadAutoRules().length===0?'<div style="font-size:12px;color:var(--t3);padding:8px 0">Sin reglas — agrega una para empezar</div>':''}
+      </div>
+    </div>
+    <div class="card">
+      <div class="lbl" style="margin-bottom:8px">Probar reglas</div>
+      <div style="display:flex;gap:6px">
+        <input class="inp" id="rule-test-inp" placeholder="Escribe un nombre de producto..." style="font-size:12px;flex:1">
+        <button class="btn btn-ghost" onclick="testAutoRules()" style="font-size:12px;flex-shrink:0">Probar</button>
+      </div>
+      <div id="rule-test-result" style="margin-top:8px;font-size:12px;color:var(--t3)"></div>
+    </div>
+    <div class="card">
+      <div class="lbl" style="margin-bottom:6px">Aplicar reglas a productos existentes</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px">Re-categoriza todos los productos que coincidan con alguna regla</div>
+      <button class="btn btn-ghost" onclick="applyAllAutoRules()" style="font-size:12px">Aplicar a todos los productos</button>
+    </div>
+    `
+    :_settingsTab==='seguridad'?`
     <div class="card" style="margin-bottom:8px">
       <div class="lbl" style="margin-bottom:10px">PIN de acceso</div>
       <div style="font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.5">
@@ -5433,15 +5607,26 @@ function renderDashboard(){
     const cl = DATA.clientes.find(c=>c.id===o.cliente_id);
     const daysLeft = o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
     const dayLabel = daysLeft===null?'':daysLeft<0?`${Math.abs(daysLeft)}d atrasado`:daysLeft===0?'Hoy':daysLeft===1?'Mañana':`${daysLeft}d`;
-    return `<div class="urg-row" style="color:${color};border-left-color:${color}" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
-      <div class="opip" style="background:${getOrderColor(o)};flex-shrink:0"></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;color:var(--t1)">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-        <div style="font-size:10px;color:var(--t3)">${esc(clName(cl))} · ${esc(getOrderLabel(o))}</div>
+    let imgs=[]; try{const j=JSON.parse(o.imagenes_json||'{}');imgs=j.imgs||[];}catch(e){}
+    const thumb = imgs.length ? imgs[imgs.length-1].url : null;
+    const product = getOrderLabel(o);
+    return `<div class="urg-row" style="border-left-color:${color}" oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')">
+      ${thumb
+        ? `<img src="${thumb}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)" onerror="this.style.display='none'">`
+        : `<div style="width:36px;height:36px;border-radius:5px;background:${color}20;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)"><div style="width:8px;height:8px;border-radius:50%;background:${color}"></div></div>`}
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
+        <div style="font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product||'Sin producto')}</div>
+        <div style="font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(clName(cl))}</div>
+        <div style="font-size:9px;color:var(--t3);font-family:'DM Mono',monospace">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace">$${fmtS(parseFloat(o.total||0))}</div>
-        ${daysLeft!==null?`<div style="font-size:9px;font-weight:800;color:${color}">${dayLabel}</div>`:''}
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t1)">$${fmtS(parseFloat(o.total||0))}</div>
+        ${daysLeft!==null?`<div style="font-size:9px;font-weight:800;color:${color};padding:1px 5px;background:${color}18;border-radius:4px">${dayLabel}</div>`:''}
+        <div style="display:flex;gap:3px;margin-top:2px">
+          <button title="Marcar lista" onclick="event.stopPropagation();dashQuickStatus('${o.id}','lista')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--border2);background:var(--s2);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--c2)" onmouseover="this.style.background='var(--c2-dim)'" onmouseout="this.style.background='var(--s2)'">✓</button>
+          <button title="Marcar entregada" onclick="event.stopPropagation();dashQuickStatus('${o.id}','entregada')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--border2);background:var(--s2);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--acc)" onmouseover="this.style.background='var(--acc-dim)'" onmouseout="this.style.background='var(--s2)'">★</button>
+          <button title="Más opciones" onclick="event.stopPropagation();showOrderCtxMenu(event,'${o.id}')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--border2);background:var(--s2);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--t2)" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">⋯</button>
+        </div>
       </div>
     </div>`;
   };
@@ -5462,15 +5647,22 @@ function renderDashboard(){
     const debe=parseFloat(o.total||0)-parseFloat(o.pagado||0);
     const entrega=o.fecha_entrega?fmtDateES(o.fecha_entrega):'';
     const days=o.fecha_entrega?Math.round((now-new Date(o.fecha_entrega))/86400000):null;
-    return `<div class="cobro-row" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;color:var(--red)">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
-        <div style="font-size:10px;color:var(--t3)">${esc(clName(cl))}${entrega?' · Entregó '+entrega:''}</div>
-        ${days!==null&&days>0?`<div style="font-size:10px;font-weight:700;color:var(--red)">${days}d sin cobrar</div>`:''}
+    let imgs=[]; try{const j=JSON.parse(o.imagenes_json||'{}');imgs=j.imgs||[];}catch(e){}
+    const thumb = imgs.length ? imgs[imgs.length-1].url : null;
+    const product = getOrderLabel(o);
+    return `<div class="cobro-row" oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')">
+      ${thumb
+        ? `<img src="${thumb}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)" onerror="this.style.display='none'">`
+        : `<div style="width:36px;height:36px;border-radius:5px;background:rgba(255,69,69,.15);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">💸</div>`}
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
+        <div style="font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product||'Sin producto')}</div>
+        <div style="font-size:11px;color:var(--t2)">${esc(clName(cl))}${entrega?' · '+entrega:''}</div>
+        <div style="font-size:9px;color:var(--t3);font-family:'DM Mono',monospace">${esc(o.numero||o.id.slice(0,8).toUpperCase())}${days!==null&&days>0?` · <span style="color:var(--red);font-weight:700">${days}d sin cobrar</span>`:''}</div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
+      <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
         <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--red)">-$${fmtS(debe)}</div>
         ${parseFloat(o.pagado)>0?`<div style="font-size:9px;color:var(--t3)">Pagó $${fmtS(parseFloat(o.pagado))}</div>`:''}
+        ${cl?.telefono?`<a href="https://wa.me/${(cl.telefono||'').replace(/[^0-9]/g,'')}" target="_blank" onclick="event.stopPropagation()" style="font-size:9px;color:#25d366;text-decoration:none;padding:1px 6px;border:1px solid rgba(37,211,102,.3);border-radius:4px;margin-top:1px">WhatsApp</a>`:''}
       </div>
     </div>`;
   };
