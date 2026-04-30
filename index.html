@@ -4334,21 +4334,51 @@ let _gdToken = null;
 let _gdTokenExpiry = 0;
 
 function gdAuth(callback) {
-  // Reuse token if still valid (expires in ~1h, we refresh after 55min)
   if (_gdToken && Date.now() < _gdTokenExpiry) { callback(null, _gdToken); return; }
   try {
     const client = google.accounts.oauth2.initTokenClient({
-      client_id: GC_CLIENT_ID, // reuse same OAuth client
+      client_id: GC_CLIENT_ID,
       scope: GD_SCOPE,
       callback: (resp) => {
         if (resp.error) { callback(new Error(resp.error)); return; }
         _gdToken = resp.access_token;
-        _gdTokenExpiry = Date.now() + 55 * 60 * 1000; // 55 min
+        _gdTokenExpiry = Date.now() + 55 * 60 * 1000;
         callback(null, _gdToken);
       },
     });
-    client.requestAccessToken({ prompt: '' }); // '' = silent if already consented
+    client.requestAccessToken({ prompt: '' });
   } catch(e) { callback(e); }
+}
+
+// Called directly from button click — opens OAuth popup synchronously,
+// then opens the file picker once we have a token
+function gdAuthThenPickFiles() {
+  if (_gdToken && Date.now() < _gdTokenExpiry) {
+    // Already authorized — open file picker directly
+    document.getElementById('ord-img-file')?.click();
+    return;
+  }
+  _ordImgStatus('⏳ Conectando con Google Drive...', 'info');
+  try {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GC_CLIENT_ID,
+      scope: GD_SCOPE,
+      callback: (resp) => {
+        if (resp.error) {
+          _ordImgStatus('✗ No se pudo conectar con Google Drive', 'err');
+          return;
+        }
+        _gdToken = resp.access_token;
+        _gdTokenExpiry = Date.now() + 55 * 60 * 1000;
+        _ordImgStatus('✓ Conectado — selecciona las imágenes', 'ok');
+        // Now open file picker — user gesture is still live after token callback
+        document.getElementById('ord-img-file')?.click();
+      },
+    });
+    client.requestAccessToken({ prompt: '' });
+  } catch(e) {
+    _ordImgStatus('✗ Error: ' + e.message, 'err');
+  }
 }
 
 // Returns a promise that resolves to the public URL of the uploaded image
@@ -4427,11 +4457,12 @@ function showOrderImagesModal(){
       <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
         <div class="lbl">Agregar imagen</div>
         <div style="display:flex;gap:6px;align-items:center">
-          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s2);border:1px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--t2);transition:border-color .15s" onmouseover="this.style.borderColor='var(--acc)'" onmouseout="this.style.borderColor='var(--border2)'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span id="ord-file-label">Subir desde dispositivo → Google Drive</span>
-            <input type="file" id="ord-img-file" accept="image/*" multiple style="display:none" onchange="addOrderImagesFromFile(this)">
-          </label>
+          <button class="btn btn-ghost" style="flex:1;justify-content:center;gap:8px;padding:9px 12px;font-size:12px;border-style:dashed"
+            onclick="gdAuthThenPickFiles()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Subir a Google Drive
+          </button>
+          <input type="file" id="ord-img-file" accept="image/*" multiple style="display:none" onchange="addOrderImagesFromFile(this)">
         </div>
         <div style="display:flex;gap:6px">
           <input class="inp" id="ord-img-url" placeholder="O pega una URL de imagen..." style="font-size:12px">
