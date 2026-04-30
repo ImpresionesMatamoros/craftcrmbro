@@ -4423,20 +4423,29 @@ async function addOrderImagesFromFile(input){
   const files = Array.from(input.files);
   if(!files.length) return;
 
+  if(!OF.imagenes) OF.imagenes = [];
+
+  // 1. Show instant local previews while uploading
+  const placeholders = files.map(file => {
+    const localUrl = URL.createObjectURL(file);
+    const entry = { url: localUrl, caption: file.name.replace(/\.[^.]+$/,''), uploaded_at: todayISO(), source: 'uploading' };
+    OF.imagenes.push(entry);
+    return { file, entry, localUrl };
+  });
+  showOrderImagesModal(); // show instantly with local previews
   _ordImgStatus(`⏳ Subiendo ${files.length} imagen${files.length>1?'es':''}...`, 'info');
 
+  // 2. Upload each file and replace placeholder URL with Cloudinary URL
   let uploaded = 0, failed = 0;
-  for(const file of files){
+  for(const { file, entry, localUrl } of placeholders){
     try{
+      _ordImgStatus(`⏳ Subiendo: ${file.name}`, 'info');
       let url, source;
       try{
-        _ordImgStatus(`⏳ Subiendo: ${file.name}`, 'info');
         url = await uploadToCloudinary(file);
         source = 'cloudinary';
-        uploaded++;
       } catch(clErr){
-        // Fallback: base64 inline
-        console.warn('Cloudinary upload failed, using base64 fallback:', clErr.message);
+        console.warn('Cloudinary failed, using base64:', clErr.message);
         url = await new Promise((res,rej) => {
           const r = new FileReader();
           r.onload = e => res(e.target.result);
@@ -4444,17 +4453,29 @@ async function addOrderImagesFromFile(input){
           r.readAsDataURL(file);
         });
         source = 'local';
-        uploaded++;
       }
-      if(!OF.imagenes) OF.imagenes = [];
-      OF.imagenes.push({ url, caption: file.name.replace(/\.[^.]+$/,''), uploaded_at: todayISO(), source });
+      // Replace placeholder with real URL
+      entry.url = url;
+      entry.source = source;
+      URL.revokeObjectURL(localUrl);
+      uploaded++;
+
+      // Update the <img> tag in the open modal directly (no full rebuild)
+      const idx = OF.imagenes.indexOf(entry);
+      const imgEl = document.querySelector(`#cmodal img[src="${CSS.escape(localUrl)}"]`);
+      if(imgEl) { imgEl.src = url; imgEl.onclick = () => window.open(url,'_blank'); }
+
     } catch(e){ failed++; console.error(e); }
+  }
+
+  // 3. Persist to Supabase immediately
+  if(OF.id){
+    const imgJson = JSON.stringify({ imgs: OF.imagenes, co: OF.cargos_override||{} });
+    sb('ordenes', `id=eq.${OF.id}`, 'PATCH', { imagenes_json: imgJson }).catch(()=>{});
   }
 
   if(failed > 0) _ordImgStatus(`⚠ ${uploaded} subida${uploaded!==1?'s':''}, ${failed} fallaron`, 'err');
   else _ordImgStatus(`✓ ${uploaded} imagen${uploaded!==1?'es':''} subida${uploaded!==1?'s':''} correctamente`, 'ok');
-
-  setTimeout(() => showOrderImagesModal(), 900);
 }
 
 function addOrderImageFromUrl(){
