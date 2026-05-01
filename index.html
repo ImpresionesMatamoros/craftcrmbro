@@ -1373,19 +1373,23 @@ async function loadAll(){
   }catch(e){sbConn=false;$('conn-dot').classList.remove('ok');}
 }
 
+let _linesLoading = false;
 function _loadActiveOrderLines(){
+  if(_linesLoading) return; // prevent concurrent calls
+  _linesLoading = true;
   const activeOrds = DATA.ordenes.filter(o=>!['entregada','cancelada'].includes(o.status));
-  // Batch: load lines for up to 40 active orders in parallel, quietly
-  Promise.all(activeOrds.slice(0,40).map(async o=>{
-    if(_prodCache[o.id]) return; // already cached
+  const toLoad = activeOrds.slice(0,40).filter(o=>!_prodCache[o.id]);
+  if(!toLoad.length){ _linesLoading=false; return; }
+  Promise.all(toLoad.map(async o=>{
     try{
       const lines = await sb('orden_lineas',`select=producto_nombre&orden_id=eq.${o.id}&order=created_at`);
       cacheOrderLines(o.id, lines||[]);
     }catch(e){}
   })).then(()=>{
-    // Silently refresh dashboard if it's currently visible
+    _linesLoading = false;
+    // Only re-render once, only if dashboard is visible, and only if we actually loaded something
     if(curPage==='dashboard') renderDashboard();
-  });
+  }).catch(()=>{ _linesLoading=false; });
 }
 
 async function connectSb(){
@@ -6098,9 +6102,7 @@ function _renderDashOpNotes() {
 }
 
 function renderDashboard(){
-  // Trigger line loading if cache is still empty (first render before loadAll completes)
-  const uncachedOrds = DATA.ordenes.filter(o=>!['entregada','cancelada'].includes(o.status)&&!_prodCache[o.id]);
-  if(uncachedOrds.length > 0) _loadActiveOrderLines();
+  // Note: line loading is triggered by loadAll, not here — prevents render loop
   const now = new Date();
   const todayStr = now.toISOString().slice(0,10);
   const in3 = new Date(now); in3.setDate(in3.getDate()+3);
