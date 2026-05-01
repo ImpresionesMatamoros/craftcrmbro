@@ -423,12 +423,14 @@ select.lf-inp{cursor:pointer;}
 .cal-cell.today-col{border-color:var(--acc);background:var(--acc-dim);}
 .cal-cell.drag-over{border-color:var(--acc);background:var(--acc-dim2);}
 .cal-date-num{font-size:11px;color:var(--t3);font-weight:600;margin-bottom:3px;}
-.cal-card{padding:4px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:2px;cursor:grab;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .1s;}
+.cal-card{padding:4px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:3px;cursor:grab;user-select:none;overflow:hidden;transition:opacity .1s;line-height:1.3;}
+.cal-card .cc-prod{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-card .cc-cl{font-size:9px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
 .cal-card:active{cursor:grabbing;opacity:0.7;}
 .cal-card.dragging{opacity:0.4;}
 /* Month grid */
 .cal-month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-.cal-month-cell{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:6px;min-height:90px;transition:border-color .1s;}
+.cal-month-cell{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:6px;min-height:130px;transition:border-color .1s;display:flex;flex-direction:column;}
 .cal-month-cell.today-col{border-color:var(--acc);background:var(--acc-dim);}
 .cal-month-cell.drag-over{border-color:var(--acc);background:var(--acc-dim2);}
 .cal-month-date{font-size:11px;color:var(--t3);font-weight:600;margin-bottom:4px;}
@@ -1170,6 +1172,20 @@ function getOrderLabel(o) {
   }
   return SL[o.status] || o.status;
 }
+
+// Product name cache: orderId → "Product 1, Product 2"
+const _prodCache = {};
+function getOrderProductName(o) {
+  if (!o) return '';
+  if (_prodCache[o.id]) return _prodCache[o.id];
+  // Try notas as fallback (often contains product info)
+  return o.notas ? o.notas.slice(0, 40) : (SL[o.status] || o.status);
+}
+// Call this after loading lines to populate cache
+function cacheOrderLines(ordId, lines) {
+  if (!lines || !lines.length) return;
+  _prodCache[ordId] = lines.map(l => l.producto_nombre || l.producto || '').filter(Boolean).join(', ') || '';
+}
 // ── DYNAMIC CATEGORY SYSTEM ──
 // Categories stored in localStorage, not hardcoded
 // Each category: {id, name, color, incrementType, config}
@@ -1629,7 +1645,7 @@ async function openEditOrder(id){
   const ord=DATA.ordenes.find(o=>o.id===id);if(!ord)return;
   const cl=DATA.clientes.find(c=>c.id===ord.cliente_id);
   let lines=[],pagos=[];
-  try{lines=await sb('orden_lineas',`select=*&orden_id=eq.${id}&order=created_at`)||[];}catch(e){}
+  try{lines=await sb('orden_lineas',`select=*&orden_id=eq.${id}&order=created_at`)||[];cacheOrderLines(id,lines);}catch(e){}
   try{pagos=await sb('orden_pagos',`select=*&orden_id=eq.${id}&order=created_at`)||[];}catch(e){}
   let imagenes=[];
   let cargos_override={};
@@ -3146,6 +3162,7 @@ async function loadKanbanLines(){
     try{
       const lines=await sb('orden_lineas',`select=producto_nombre,cantidad,status_linea&orden_id=eq.${o.id}&order=created_at`);
       if(!lines||!lines.length){el.innerHTML='<span style="color:var(--t3)">Sin productos</span>';continue;}
+      cacheOrderLines(o.id, lines);
       el.innerHTML=lines.map(l=>{
         const st=l.status_linea||'pendiente';
         const dot=st==='listo'?'🟢':st==='en_proceso'?'🟡':'⚪';
@@ -3407,6 +3424,123 @@ async function dashQuickStatus(ordId, newStatus) {
   } catch(e) { toast('Error: ' + e.message); }
 }
 
+// ── Client context menu ──
+function showClientCtxMenu(e, cid) {
+  closeCtxMenu();
+  const cl = DATA.clientes.find(c=>c.id===cid);
+  if(!cl) return;
+  const phone = (cl.telefono||'').replace(/[^0-9]/g,'');
+  const menu = document.createElement('div');
+  menu.id = 'ctx-menu';
+  menu.style.cssText = `position:fixed;top:${Math.min(e.clientY,window.innerHeight-220)}px;left:${Math.min(e.clientX,window.innerWidth-200)}px;background:var(--s3);border:1px solid var(--border3);border-radius:8px;box-shadow:var(--shadow2);z-index:400;min-width:195px;overflow:hidden;padding:4px 0;`;
+  menu.innerHTML = `
+    <div style="padding:7px 14px 5px;font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border)">${esc(cl.nombre||'Cliente')}</div>
+    <div class="ctx-item" onclick="closeCtxMenu();openClientProfile('${cid}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Ver ficha del cliente
+    </div>
+    <div class="ctx-item" onclick="closeCtxMenu();openNewOrderForClient('${cid}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nueva orden
+    </div>
+    ${phone ? `<div style="border-top:1px solid var(--border);margin:3px 0"></div>
+    <a class="ctx-item" href="tel:${phone}" style="text-decoration:none;color:var(--t1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.18 2 2 0 015.08 6h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.91 13a16 16 0 006.29 6.29l.41-.41a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      Llamar
+    </a>
+    <a class="ctx-item" href="sms:${phone}" style="text-decoration:none;color:var(--t1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Mensaje (iMessage/SMS)
+    </a>
+    <a class="ctx-item" href="https://wa.me/${phone}" target="_blank" style="text-decoration:none;color:#25d366">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.553 4.122 1.523 5.855L.057 23.492a.5.5 0 00.541.633l5.939-1.556A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.034-1.389l-.36-.215-3.733.979.996-3.638-.235-.374A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+      WhatsApp
+    </a>` : ''}
+    <div style="border-top:1px solid var(--border);margin:3px 0"></div>
+    <div class="ctx-item" onclick="closeCtxMenu();if(confirm('¿Eliminar este cliente?'))delClient('${cid}')" style="color:var(--red)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Eliminar cliente
+    </div>`;
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
+}
+
+// ── Taller card context menu ──
+function showTallerCtxMenu(e, l) {
+  closeCtxMenu();
+  const menu = document.createElement('div');
+  menu.id = 'ctx-menu';
+  menu.style.cssText = `position:fixed;top:${Math.min(e.clientY,window.innerHeight-200)}px;left:${Math.min(e.clientX,window.innerWidth-210)}px;background:var(--s3);border:1px solid var(--border3);border-radius:8px;box-shadow:var(--shadow2);z-index:400;min-width:200px;overflow:hidden;padding:4px 0;`;
+  const catOpts = USER_CATS.map(c=>`<option value="${c.name}"${l.categoria===c.name?' selected':''}>${c.name}</option>`).join('');
+  menu.innerHTML = `
+    <div style="padding:7px 14px 5px;font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border)">${esc(l.producto||'Producto')}</div>
+    <div style="padding:7px 12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:700;text-transform:uppercase">Categoría taller</div>
+      <select class="inp" style="font-size:12px;width:100%" onchange="updateTallerLineCategory('${l.line_id}','${l.orden_id}',this.value);closeCtxMenu()">${catOpts}</select>
+    </div>
+    <div class="ctx-item" onclick="closeCtxMenu();setTallerLineStatus('${l.line_id}','${l.orden_id}','pendiente')" style="color:#4d94ff">⚪ Marcar pendiente</div>
+    <div class="ctx-item" onclick="closeCtxMenu();setTallerLineStatus('${l.line_id}','${l.orden_id}','en_proceso')" style="color:var(--c3)">🔶 Marcar en proceso</div>
+    <div class="ctx-item" onclick="closeCtxMenu();setTallerLineStatus('${l.line_id}','${l.orden_id}','listo')" style="color:var(--c2)">✅ Marcar listo</div>
+    <div style="border-top:1px solid var(--border);margin:3px 0"></div>
+    <div class="ctx-item" onclick="closeCtxMenu();openEditOrder('${l.orden_id}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Abrir orden completa
+    </div>`;
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
+}
+
+async function updateTallerLineCategory(lineId, ordenId, newCat) {
+  try {
+    const line = _tallerLines.find(l=>l.line_id===lineId);
+    if(line) line.categoria = newCat;
+    // Update opciones_json on the line
+    const existing = await sb('orden_lineas',`select=opciones_json&id=eq.${lineId}`);
+    const ops = existing?.[0]?.opciones_json || {};
+    ops.categoria = newCat;
+    await sb('orden_lineas',`id=eq.${lineId}`,'PATCH',{opciones_json: ops, categoria: newCat});
+    toast('Categoría actualizada ✓');
+    _renderTallerBoard();
+  } catch(e) { toast('Error: '+e.message); }
+}
+
+// ── Product context menu ──
+function showProductCtxMenu(e, pid) {
+  closeCtxMenu();
+  const p = DATA.productos.find(x=>x.id===pid);
+  if(!p) return;
+  const catOpts = USER_CATS.map(c=>`<option value="${c.name}"${p.categoria===c.name?' selected':''}>${c.name}</option>`).join('');
+  const menu = document.createElement('div');
+  menu.id = 'ctx-menu';
+  menu.style.cssText = `position:fixed;top:${Math.min(e.clientY,window.innerHeight-200)}px;left:${Math.min(e.clientX,window.innerWidth-210)}px;background:var(--s3);border:1px solid var(--border3);border-radius:8px;box-shadow:var(--shadow2);z-index:400;min-width:200px;overflow:hidden;padding:4px 0;`;
+  menu.innerHTML = `
+    <div style="padding:7px 14px 5px;font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border)">${esc(p.nombre||'Producto')}</div>
+    <div style="padding:7px 12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:700;text-transform:uppercase">Cambiar categoría</div>
+      <select class="inp" style="font-size:12px;width:100%" onchange="quickUpdateProductCat('${pid}',this.value);closeCtxMenu()">${catOpts}</select>
+    </div>
+    <div class="ctx-item" onclick="closeCtxMenu();editProduct('${pid}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Editar producto
+    </div>
+    <div class="ctx-item" onclick="closeCtxMenu();if(confirm('¿Eliminar este producto?'))deleteProd('${pid}')" style="color:var(--red)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Eliminar
+    </div>`;
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
+}
+
+async function quickUpdateProductCat(pid, newCat) {
+  try {
+    await sb('productos',`id=eq.${pid}`,'PATCH',{categoria:newCat});
+    const p = DATA.productos.find(x=>x.id===pid);
+    if(p) p.categoria = newCat;
+    toast('Categoría actualizada ✓');
+    renderProducts();
+  } catch(e) { toast('Error: '+e.message); }
+}
+
 function openNewOrderForDate(dateStr){
   OF={id:null,numero:'',cliente_id:null,cliente_nombre:'',status:'cotizacion',fecha_entrega:dateStr,notas:'',moneda:DEFAULT_MONEDA,descuento_pct:0,iva:true,lines:[],pagos:[],pagado:0};
   renderOrderForm();
@@ -3489,14 +3623,17 @@ function buildMonthGrid(){
       ${ords.slice(0,3).map(o=>{
         const cl=DATA.clientes.find(c=>c.id===o.cliente_id);
         const sc=getOrderColor(o);
+        const prodName = getOrderProductName(o) || getOrderLabel(o);
         return`<div class="cal-card" style="background:${sc}20;color:${sc};border-left:2px solid ${sc}"
           draggable="true"
           ondragstart="onCalDragStart(event,'${o.id}')"
           ondragend="onCalDragEnd(event)"
           onclick="event.stopPropagation();openEditOrder('${o.id}')"
+          oncontextmenu="event.preventDefault();event.stopPropagation();showOrderCtxMenu(event,'${o.id}')"
           ondblclick="event.stopPropagation();openEditOrder('${o.id}')"
-          title="${esc(o.numero||'')}${cl?' — '+clName(cl):''}">
-          ${esc((o.numero||o.id.slice(0,6)).replace('ORD-','#'))} ${cl?esc(cl.nombre.split(' ')[0]):''}
+          title="${esc(prodName)}${cl?' — '+clName(cl):''}">
+          <div class="cc-prod">${esc(prodName)}</div>
+          ${cl?`<div class="cc-cl">${esc(cl.nombre.split(' ')[0]||clName(cl))}</div>`:''}
         </div>`;
       }).join('')}
       ${ords.length>3?`<div style="font-size:9px;color:var(--t3);padding:1px 4px">+${ords.length-3} más</div>`:''}
@@ -3542,6 +3679,7 @@ function renderProducts(q=''){
       </div>`);
     ctxSet('Productos');dpHide();
   }
+  const _prodTab = window._prodPageTab || 'list';
   $('main').innerHTML=`<div class="page">
     <div class="ph"><span class="ptitle">Productos</span>
       <div style="display:flex;gap:6px">
@@ -3549,15 +3687,54 @@ function renderProducts(q=''){
         <button class="btn btn-acc" onclick="editProduct()">+ Nuevo</button>
       </div>
     </div>
-    <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="inp" placeholder="Buscar..." oninput="renderProducts(this.value)" value="${esc(q)}">
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">
+      <button onclick="window._prodPageTab='list';renderProducts()" style="padding:7px 16px;background:transparent;border:none;font-size:12px;font-weight:600;color:${_prodTab==='list'?'var(--t1)':'var(--t3)'};border-bottom:2px solid ${_prodTab==='list'?'var(--acc)':'transparent'};cursor:pointer;margin-bottom:-1px">Catálogo</button>
+      <button onclick="window._prodPageTab='rules';renderProducts()" style="padding:7px 16px;background:transparent;border:none;font-size:12px;font-weight:600;color:${_prodTab==='rules'?'var(--t1)':'var(--t3)'};border-bottom:2px solid ${_prodTab==='rules'?'var(--acc)':'transparent'};cursor:pointer;margin-bottom:-1px">⚡ Reglas auto-cat.</button>
     </div>
-    ${list.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">Sin productos — <button class="btn btn-ghost" onclick="seedData()" style="display:inline-flex;font-size:11px">Cargar ejemplos de imprenta</button></div>`
+    ${_prodTab==='rules'?`
+    <div class="card" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div class="lbl" style="margin-bottom:2px">Reglas de auto-categorización</div>
+          <div style="font-size:11px;color:var(--t3)">Si el nombre contiene esta palabra → asigna esta categoría automáticamente al guardar</div>
+        </div>
+        <button class="btn btn-acc" onclick="addAutoRule();window._prodPageTab='rules';renderProducts()" style="font-size:11px;padding:4px 12px;flex-shrink:0">+ Regla</button>
+      </div>
+      ${(loadAutoRules()).length===0?'<div style="font-size:12px;color:var(--t3);padding:8px 0">Sin reglas aún — agrega una para empezar</div>':''}
+      ${(loadAutoRules()).map((r,i)=>`
+        <div style="display:grid;grid-template-columns:1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center">
+          <input class="inp" style="font-size:12px" placeholder="Contiene..." value="${esc(r.keyword)}" onchange="updateAutoRule(${i},'keyword',this.value)">
+          <select class="inp" style="font-size:12px" onchange="updateAutoRule(${i},'category',this.value)">
+            ${USER_CATS.map(c=>`<option value="${c.name}"${r.category===c.name?' selected':''}>${c.name}</option>`).join('')}
+          </select>
+          <button class="btn-icon del" onclick="deleteAutoRule(${i});window._prodPageTab='rules';renderProducts()" title="Eliminar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`).join('')}
+    </div>
+    <div class="card" style="margin-bottom:8px">
+      <div class="lbl" style="margin-bottom:8px">Probar</div>
+      <div style="display:flex;gap:6px">
+        <input class="inp" id="rule-test-inp" placeholder="Escribe un nombre de producto..." style="font-size:12px;flex:1">
+        <button class="btn btn-ghost" onclick="testAutoRules()" style="font-size:12px;flex-shrink:0">Probar</button>
+      </div>
+      <div id="rule-test-result" style="margin-top:8px;font-size:12px;color:var(--t3)"></div>
+    </div>
+    <div class="card">
+      <div class="lbl" style="margin-bottom:6px">Aplicar a todos los productos</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px">Re-categoriza todos los productos que coincidan con alguna regla activa</div>
+      <button class="btn btn-ghost" onclick="applyAllAutoRules()" style="font-size:12px">Aplicar reglas ahora</button>
+    </div>
+    `:''}
+    ${_prodTab==='list'?`<div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="inp" placeholder="Buscar..." oninput="renderProducts(this.value)" value="${esc(q)}">
+    </div>`:''}
+    ${_prodTab!=='list'?'':list.length===0?`<div style="padding:36px 0;text-align:center;color:var(--t3);font-size:12px">Sin productos — <button class="btn btn-ghost" onclick="seedData()" style="display:inline-flex;font-size:11px">Cargar ejemplos de imprenta</button></div>`
     :list.map(p=>{
       const cat=USER_CATS.find(c=>c.name===p.categoria);
       const catColor=cat?.color||'var(--border2)';
       const incIcon={regular:'×',tiers:'≡',dimensional:'⊡',weight:'⚖',volume:'⚖',time:'⏱'}[cat?.incrementType||'regular']||'×';
-      return`<div class="list-row" onclick="editProduct('${p.id}')" style="border-left:3px solid ${catColor}">
+      return`<div class="list-row" onclick="editProduct('${p.id}')" oncontextmenu="event.preventDefault();showProductCtxMenu(event,'${p.id}')" style="border-left:3px solid ${catColor}">
         <div style="width:28px;height:28px;border-radius:6px;background:${catColor}20;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:${catColor}">${incIcon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600">${esc(p.nombre)}</div>
@@ -3736,7 +3913,7 @@ function renderClients(q=''){
       const active=ords.filter(o=>!['entregada','cancelada'].includes(o.status));
       const total=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
       const ini=(c.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-      return`<div class="list-row" onclick="openClientProfile('${c.id}')">
+      return`<div class="list-row" onclick="openClientProfile('${c.id}')" oncontextmenu="event.preventDefault();showClientCtxMenu(event,'${c.id}')">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--acc);flex-shrink:0">${ini}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600">${esc(c.nombre)}</div>
@@ -5435,7 +5612,7 @@ function _renderTallerBoard() {
             ? `<img src="${l.img_url}" style="width:100%;height:52px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:block" onerror="this.style.display='none'">`
             : '';
 
-          return `<div class="tc" onclick="openEditOrder('${l.orden_id}')">
+          return `<div class="tc" onclick="openEditOrder('${l.orden_id}')" oncontextmenu="event.preventDefault();showTallerCtxMenu(event,l)">
             <div class="tc-accent" style="background:${catColor}"></div>
             ${imgHtml}
             <div class="tc-prod">${esc(l.producto)}</div>
@@ -5615,9 +5792,12 @@ function renderDashboard(){
         ? `<img src="${thumb}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)" onerror="this.style.display='none'">`
         : `<div style="width:36px;height:36px;border-radius:5px;background:${color}20;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)"><div style="width:8px;height:8px;border-radius:50%;background:${color}"></div></div>`}
       <div style="flex:1;min-width:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
-        <div style="font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product||'Sin producto')}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(getOrderProductName(o)||'Sin producto')}</div>
         <div style="font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(clName(cl))}</div>
-        <div style="font-size:9px;color:var(--t3);font-family:'DM Mono',monospace">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${getOrderColor(o)};flex-shrink:0"></span>
+          <span style="font-size:9px;color:var(--t3);font-family:'DM Mono',monospace">${esc(o.numero||o.id.slice(0,8).toUpperCase())}</span>
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
         <div style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t1)">$${fmtS(parseFloat(o.total||0))}</div>
@@ -5655,9 +5835,12 @@ function renderDashboard(){
         ? `<img src="${thumb}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)" onerror="this.style.display='none'">`
         : `<div style="width:36px;height:36px;border-radius:5px;background:rgba(255,69,69,.15);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">💸</div>`}
       <div style="flex:1;min-width:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
-        <div style="font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product||'Sin producto')}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(getOrderProductName(o)||'Sin producto')}</div>
         <div style="font-size:11px;color:var(--t2)">${esc(clName(cl))}${entrega?' · '+entrega:''}</div>
-        <div style="font-size:9px;color:var(--t3);font-family:'DM Mono',monospace">${esc(o.numero||o.id.slice(0,8).toUpperCase())}${days!==null&&days>0?` · <span style="color:var(--red);font-weight:700">${days}d sin cobrar</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${getOrderColor(o)};flex-shrink:0"></span>
+          <span style="font-size:9px;color:var(--t3);font-family:'DM Mono',monospace">${esc(o.numero||o.id.slice(0,8).toUpperCase())}${days!==null&&days>0?` · <span style="color:var(--red);font-weight:700">${days}d sin cobrar</span>`:''}</span>
+        </div>
       </div>
       <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
         <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--red)">-$${fmtS(debe)}</div>
@@ -5728,8 +5911,11 @@ function renderDashboard(){
               ? `<img class="dash-ord-thumb" src="${thumb}" onerror="this.outerHTML='<div class=dash-ord-thumb-ph>📷</div>'">`
               : `<div class="dash-ord-thumb-ph" style="background:${sc}22"><div style="width:6px;height:6px;border-radius:50%;background:${sc}"></div></div>`}
             <div style="flex:1;min-width:0">
-              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t1)">${esc(label||o.numero||o.id.slice(0,8).toUpperCase())}</div>
-              <div style="font-size:10px;color:var(--t3)">${esc(o.numero||'')}${o.numero&&days!==null?' · ':''}</div>
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t1)">${esc(getOrderProductName(o)||label||'Sin producto')}</div>
+              <div style="display:flex;align-items:center;gap:3px;margin-top:1px">
+                <span style="width:5px;height:5px;border-radius:50%;background:${sc};flex-shrink:0;display:inline-block"></span>
+                <span style="font-size:9px;color:var(--t3)">${esc(o.numero||o.id.slice(0,6).toUpperCase())}</span>
+              </div>
             </div>
             ${days!==null?`<div style="font-size:10px;font-weight:700;color:${days<0?'var(--red)':days<=3?'var(--amber)':'var(--t3)'};flex-shrink:0">${days<0?Math.abs(days)+'d atrás':days===0?'Hoy':days+'d'}</div>`:''}
           </div>`;}).join('')}
