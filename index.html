@@ -739,6 +739,11 @@ select.lf-inp{cursor:pointer;}
 /* Cobro pendiente */
 .cobro-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,171,0,.06);border:1px solid rgba(255,171,0,.2);border-left:3px solid var(--amber);border-radius:6px;margin-bottom:4px;cursor:pointer;transition:all .1s;}
 .cobro-row:hover{background:rgba(255,171,0,.1);border-color:rgba(255,171,0,.35);}
+.urg-row[draggable=true]{cursor:grab;}
+.urg-row[draggable=true]:active{cursor:grabbing;}
+.urg-row.drag-src{opacity:.4;transform:scale(.98);}
+.dash-cobro-drop{transition:all .15s;border-radius:8px;}
+.dash-cobro-drop.drag-over{background:rgba(255,171,0,.12);outline:2px dashed var(--amber);outline-offset:3px;}
 </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <meta name="google-signin-client_id" content="921894159659-f28bl8jcn0h2hdbarosqtltrk6en36do.apps.googleusercontent.com">
@@ -3460,6 +3465,74 @@ async function dashQuickStatus(ordId, newStatus) {
   } catch(e) { toast('Error: ' + e.message); }
 }
 
+async function onDashUrgDrop(e, zone) {
+  e.preventDefault();
+  const ordId = e.dataTransfer.getData('dashOrdId');
+  if (!ordId) return;
+  const ord = DATA.ordenes.find(o => o.id === ordId);
+  if (!ord) return;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  let newDate;
+  if (zone === 'overdue') {
+    // Drop into Vencidas → set to today (so it appears as "delivers today")
+    newDate = today;
+  } else if (zone === 'today') {
+    newDate = today;
+  } else if (zone === '3days') {
+    // Place at 2 days from now (middle of the 1-3 day window)
+    newDate = new Date(today); newDate.setDate(today.getDate() + 2);
+  } else if (zone === 'week') {
+    // Place at 5 days from now (middle of the 4-7 day window)
+    newDate = new Date(today); newDate.setDate(today.getDate() + 5);
+  } else if (zone === 'ready') {
+    // Just change status to 'lista', don't change date
+    try {
+      await sb('ordenes', `id=eq.${ordId}`, 'PATCH', { status: 'lista' });
+      ord.status = 'lista';
+      toast(`✓ "${getOrderProductName(ord)||'Orden'}" marcada como lista para entregar`);
+      renderDashboard();
+    } catch(e) { toast('Error: ' + e.message); }
+    return;
+  }
+
+  const dateStr = newDate.toISOString().slice(0,10);
+  const oldDate = ord.fecha_entrega?.slice(0,10) || 'sin fecha';
+
+  const zoneLabels = { overdue:'Hoy (vencida)', today:'Hoy', '3days':'En 2 días', week:'En 5 días' };
+  const label = zoneLabels[zone] || zone;
+
+  try {
+    await sb('ordenes', `id=eq.${ordId}`, 'PATCH', { fecha_entrega: dateStr });
+    ord.fecha_entrega = dateStr;
+    toast(`📅 Entrega actualizada → ${label}`);
+    renderDashboard();
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+async function onDashCobroDrop(e) {
+  e.preventDefault();
+  document.getElementById('dash-cobro-zone')?.classList.remove('drag-over');
+  const ordId = e.dataTransfer.getData('dashOrdId');
+  if (!ordId) return;
+  const ord = DATA.ordenes.find(o => o.id === ordId);
+  if (!ord) return;
+  const cl = DATA.clientes.find(c => c.id === ord.cliente_id);
+  const prod = getOrderProductName(ord) || 'esta orden';
+  const total = parseFloat(ord.total || 0);
+  const pagado = parseFloat(ord.pagado || 0);
+  const debe = total - pagado;
+  // Mark as entregada — cobro stays pending (pagado unchanged)
+  try {
+    await sb('ordenes', `id=eq.${ordId}`, 'PATCH', { status: 'entregada' });
+    ord.status = 'entregada';
+    toast(`📦 "${prod}" marcada como entregada — $${fmtS(debe)} por cobrar`);
+    renderDashboard();
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
 // ── Client context menu ──
 function showClientCtxMenu(e, cid) {
   closeCtxMenu();
@@ -5960,7 +6033,11 @@ function renderDashboard(){
     let imgs=[]; try{const j=JSON.parse(o.imagenes_json||'{}');imgs=j.imgs||[];}catch(e){}
     const thumb = imgs.length ? imgs[imgs.length-1].url : null;
     const product = getOrderLabel(o);
-    return `<div class="urg-row" style="border-left-color:${color}" oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')">
+    return `<div class="urg-row" style="border-left-color:${color}"
+      draggable="true"
+      ondragstart="event.dataTransfer.setData('dashOrdId','${o.id}');this.classList.add('drag-src');document.getElementById('dash-cobro-zone')?.classList.add('hint')"
+      ondragend="this.classList.remove('drag-src');document.getElementById('dash-cobro-zone')?.classList.remove('hint')"
+      oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')">
       ${thumb
         ? `<img src="${thumb}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)" onerror="this.style.display='none'">`
         : `<div style="width:36px;height:36px;border-radius:5px;background:${color}20;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)"><div style="width:8px;height:8px;border-radius:50%;background:${color}"></div></div>`}
@@ -5985,13 +6062,18 @@ function renderDashboard(){
     </div>`;
   };
 
-  const urgSection = (title, orders, color, emptyMsg='') => `
-    <div style="margin-bottom:14px">
+  // zone: 'overdue' | 'today' | '3days' | 'week' | 'ready'
+  const urgSection = (title, orders, color, emptyMsg='', zone='') => `
+    <div style="margin-bottom:14px;border-radius:8px;transition:all .15s"
+      ${zone?`data-zone="${zone}"
+      ondragover="event.preventDefault();this.style.background='${color}18';this.style.outline='2px dashed ${color}';this.style.outlineOffset='3px'"
+      ondragleave="this.style.background='';this.style.outline=''"
+      ondrop="this.style.background='';this.style.outline='';onDashUrgDrop(event,'${zone}')"`:''}>
       <div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;display:flex;align-items:center;gap:6px">
         <span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>${title}
         <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:${orders.length?color+'22':'transparent'};color:${orders.length?color:'var(--t3)'};margin-left:auto">${orders.length}</span>
       </div>
-      ${orders.length===0?`<div style="font-size:11px;color:var(--t3);padding:4px 0">${emptyMsg||'—'}</div>`
+      ${orders.length===0?`<div style="font-size:11px;color:var(--t3);padding:6px 8px;border:1px dashed var(--border);border-radius:6px;text-align:center">${emptyMsg||'—'}</div>`
       :orders.map(o=>urgRow(o,color)).join('')}
     </div>`;
 
@@ -6210,16 +6292,22 @@ function renderDashboard(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 26px 0">
       <div>
         <div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🚨 Urgente</div>
-        ${urgSection('Vencidas',overdue,'var(--red)','✓ Sin órdenes vencidas')}
-        ${urgSection('Entregan hoy',todayDue,'var(--amber)','Sin entregas hoy')}
-        ${urgSection('En 3 días',soon,'#4d94ff','Despejado')}
-        ${urgSection('Listas para entregar',readyToDeliver,'var(--c2)','Sin órdenes listas')}
-        ${thisWeek.length?urgSection('Esta semana',thisWeek,'var(--t2)'):''}
+        ${urgSection('Vencidas',overdue,'var(--red)','✓ Sin órdenes vencidas','overdue')}
+        ${urgSection('Entregan hoy',todayDue,'var(--amber)','Sin entregas hoy','today')}
+        ${urgSection('En 3 días',soon,'#4d94ff','Despejado','3days')}
+        ${urgSection('Listas para entregar',readyToDeliver,'var(--c2)','Sin órdenes listas','ready')}
+        ${thisWeek.length?urgSection('Esta semana',thisWeek,'var(--t2)','','week'):''}
       </div>
-      <div>
-        <div style="font-size:10px;font-weight:800;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">💸 Cobros pendientes${cobroPendiente.length?` <span style="background:rgba(255,171,0,.18);color:var(--amber);padding:1px 6px;border-radius:8px">${cobroPendiente.length}</span>`:''}</div>
+      <div class="dash-cobro-drop" id="dash-cobro-zone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="onDashCobroDrop(event)">
+        <div style="font-size:10px;font-weight:800;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+          💸 Cobros pendientes${cobroPendiente.length?` <span style="background:rgba(255,171,0,.18);color:var(--amber);padding:1px 6px;border-radius:8px">${cobroPendiente.length}</span>`:''}
+          <span style="margin-left:auto;font-size:9px;font-weight:400;color:var(--t3);font-style:italic">← arrastra aquí</span>
+        </div>
         ${cobroPendiente.length===0
-          ?`<div style="font-size:12px;color:var(--t3);padding:16px 0">✓ Todo cobrado</div>`
+          ?`<div style="font-size:11px;color:var(--t3);padding:16px 0;text-align:center;border:1px dashed var(--border);border-radius:6px">✓ Todo cobrado</div>`
           :cobroPendiente.map(cobroRow).join('')}
       </div>
     </div>
