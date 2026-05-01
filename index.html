@@ -57,16 +57,52 @@
   --shadow:0 4px 24px rgba(0,0,0,0.5); --shadow2:0 8px 36px rgba(0,0,0,0.7);
 }
 [data-theme="slate"]{
-  --bg:#f2f2f0; --s1:#e8e8e5; --s2:#dededd; --s3:#d4d4d1; --s4:#cacac7;
-  --border:#d0d0cc; --border2:#bcbcb8; --border3:#a0a09c;
-  --t1:#1a1a18; --t2:#555552; --t3:#999994;
-  --c1:#1a1a18; --c2:#3ddc84; --c3:#ff6b35; --c4:#4d94ff; --c5:#1a1a18;
-  --c1-rgb:26,26,24; --c1-dim:rgba(26,26,24,0.08); --c1-dim2:rgba(26,26,24,0.14);
-  --c2-dim:rgba(61,220,132,0.15); --c3-dim:rgba(255,107,53,0.12); --c4-dim:rgba(77,148,255,0.12);
-  --acc:#1a1a18; --acc-rgb:26,26,24; --acc-dim:rgba(26,26,24,0.08); --acc-dim2:rgba(26,26,24,0.14);
-  --green:#3ddc84; --amber:#ff6b35; --blue:#4d94ff;
-  --shadow:0 2px 12px rgba(0,0,0,0.1); --shadow2:0 6px 28px rgba(0,0,0,0.15);
+  /* Warm white backgrounds — slight cream tint, feels premium not sterile */
+  --bg:#f7f6f3; --s1:#ffffff; --s2:#f0eeea; --s3:#e8e5e0; --s4:#dedad4;
+  --border:#e2dfd9; --border2:#ccc9c2; --border3:#aaa8a0;
+
+  /* Text — deep warm charcoal, not pure black */
+  --t1:#1c1a17; --t2:#6b6760; --t3:#a8a49c;
+
+  /* Accent — indigo with good contrast on white, modern & confident */
+  --acc:#4f46e5; --acc-rgb:79,70,229;
+  --acc-dim:rgba(79,70,229,0.08); --acc-dim2:rgba(79,70,229,0.14);
+
+  /* Status colors — slightly richer on light bg */
+  --c1:#4f46e5; --c1-rgb:79,70,229; --c1-dim:rgba(79,70,229,0.1); --c1-dim2:rgba(79,70,229,0.18);
+  --c2:#16a34a; --c2-dim:rgba(22,163,74,0.12);
+  --c3:#ea580c; --c3-dim:rgba(234,88,12,0.12);
+  --c4:#2563eb; --c4-dim:rgba(37,99,235,0.12);
+  --c5:#7c3aed;
+
+  /* Semantic colors */
+  --red:#dc2626; --red-dim:rgba(220,38,38,0.09);
+  --green:#16a34a; --amber:#d97706; --blue:#2563eb;
+
+  --shadow:0 1px 8px rgba(0,0,0,0.08); --shadow2:0 6px 24px rgba(0,0,0,0.12);
 }
+
+/* Light theme overrides — btn-acc needs white text on indigo */
+[data-theme="slate"] .btn-acc { color: #ffffff !important; }
+[data-theme="slate"] .mc-day.sel { color: #ffffff !important; }
+[data-theme="slate"] .stat { background: var(--s1); }
+[data-theme="slate"] .card { background: var(--s1); }
+[data-theme="slate"] .modal { background: var(--s1); }
+[data-theme="slate"] .lp-item:hover { background: var(--s2); }
+[data-theme="slate"] .ctx-item:hover { background: var(--s2); }
+[data-theme="slate"] .inp { background: var(--s1); border-color: var(--border2); }
+[data-theme="slate"] .inp:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+[data-theme="slate"] .btn-ghost { border-color: var(--border2); color: var(--t2); }
+[data-theme="slate"] .btn-ghost:hover { background: var(--s2); color: var(--t1); border-color: var(--border3); }
+[data-theme="slate"] .kanban-card { background: var(--s1); }
+[data-theme="slate"] .taller-col { background: var(--s1) !important; }
+[data-theme="slate"] .tc { background: var(--s2); }
+[data-theme="slate"] .order-row:hover { background: var(--s2); }
+[data-theme="slate"] .lp-item.selected, [data-theme="slate"] .lp-item.active { background: var(--acc-dim2); }
+[data-theme="slate"] .rb.on { background: var(--acc-dim2); color: var(--acc); }
+[data-theme="slate"] .dash-card { background: var(--s1); }
+[data-theme="slate"] .cobro-row { background: rgba(217,119,6,0.06); }
+[data-theme="slate"] .urg-row { background: var(--s1); }
 
 html,body{height:100%;overflow:hidden;background:var(--bg);}
 body{font-family:'DM Sans',sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased;transition:background .25s,color .25s;}
@@ -754,12 +790,12 @@ select.lf-inp{cursor:pointer;}
     <div class="rl" id="brand-logo" onclick="navigate('settings')" title="Ajustes de marca">
       <span class="rl-text" id="brand-initials">C</span>
     </div>
-    <button class="rb on" id="rb-orders" onclick="navigate('orders')">
+    <button class="rb" id="rb-orders" onclick="navigate('orders')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       <span class="rb-label">Órdenes</span>
       <span class="tip">Órdenes</span>
     </button>
-    <button class="rb" id="rb-dashboard" onclick="navigate('dashboard')">
+    <button class="rb on" id="rb-dashboard" onclick="navigate('dashboard')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
       <span class="rb-label">Dashboard</span>
       <span class="tip">Dashboard</span>
@@ -1010,7 +1046,7 @@ function saveCredentials(url,key){
   SB_URL=url;SB_KEY=key;
 }
 
-let sbConn=false, curPage='orders';
+let sbConn=false, curPage='dashboard';
 let DATA={productos:[],clientes:[],ordenes:[],proveedores:[]};
 
 // ── BRANDING / THEME — 4 presets + custom ──
@@ -1156,16 +1192,25 @@ const SC={cotizacion:'#4d94ff',confirmada:'#ff6b35',en_produccion:'#aa77ff',list
 const SL={cotizacion:'Cotización',confirmada:'Confirmada',en_produccion:'En producción',lista:'Lista',entregada:'Entregada',cancelada:'Cancelada'};
 
 // Returns the visual color for an order based on status + payment state
+function _isLightTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'slate';
+}
+// Status colors — slightly darker on light theme for readable contrast
+const SC_LIGHT = {
+  cotizacion:'#2563eb', confirmada:'#ea580c', en_produccion:'#7c3aed',
+  lista:'#16a34a', entregada:'#166534', cancelada:'#dc2626'
+};
 function getOrderColor(o) {
   if (!o) return '#555';
-  if (o.status === 'cancelada') return '#ff4545';
+  const light = _isLightTheme();
+  if (o.status === 'cancelada') return light ? '#dc2626' : '#ff4545';
   if (o.status === 'entregada') {
     const total = parseFloat(o.total || 0);
     const pagado = parseFloat(o.pagado || 0);
     const isPaid = total > 0 && pagado >= total - 0.01;
-    return isPaid ? '#1a5c32' : '#3ddc84';
+    return isPaid ? (light ? '#166534' : '#1a5c32') : (light ? '#16a34a' : '#3ddc84');
   }
-  return SC_HEX[o.status] || '#555';
+  return (light ? SC_LIGHT : SC)[o.status] || (light ? SC_HEX[o.status] : '#555') || '#555';
 }
 
 // Returns a label that reflects payment status for delivered orders
@@ -6066,10 +6111,11 @@ function renderDashboard(){
   const thisYear = now.getFullYear();
 
   const active = DATA.ordenes.filter(o=>!['entregada','cancelada'].includes(o.status));
-  const overdue = active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)<todayStr);
-  const todayDue = active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===todayStr);
-  const soon = active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>todayStr&&o.fecha_entrega.slice(0,10)<=in3Str);
-  const thisWeek = active.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>in3Str&&o.fecha_entrega.slice(0,10)<=in7Str);
+  const notReady = active.filter(o=>o.status!=='lista'); // exclude 'lista' from date sections
+  const overdue = notReady.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)<todayStr);
+  const todayDue = notReady.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)===todayStr);
+  const soon = notReady.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>todayStr&&o.fecha_entrega.slice(0,10)<=in3Str);
+  const thisWeek = notReady.filter(o=>o.fecha_entrega&&o.fecha_entrega.slice(0,10)>in3Str&&o.fecha_entrega.slice(0,10)<=in7Str);
   const readyToDeliver = active.filter(o=>o.status==='lista');
 
   // Cobros pendientes: entregadas pero no pagadas del todo
