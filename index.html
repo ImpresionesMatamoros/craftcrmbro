@@ -716,6 +716,8 @@ select.lf-inp{cursor:pointer;}
 .dash-remove-btn{width:22px;height:22px;border-radius:50%;background:transparent;border:1px solid var(--border2);color:var(--t3);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s;}
 .dash-remove-btn:hover{background:rgba(255,69,69,.15);border-color:var(--red);color:var(--red);}
 /* Urgency section */
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+.op-note-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:800;color:var(--red);background:rgba(255,69,69,.15);border:1px solid rgba(255,69,69,.3);border-radius:4px;padding:1px 5px;}
 .urg-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-left:3px solid var(--border);border-radius:0 6px 6px 0;background:var(--s1);margin-bottom:4px;cursor:pointer;transition:all .1s;}
 .urg-row:hover{border-left-color:currentColor;background:var(--s2);}
 /* ══ NOTE COMPOSE v2 ══ */
@@ -735,8 +737,8 @@ select.lf-inp{cursor:pointer;}
 .pending-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--c3);animation:blink 1.4s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 /* Cobro pendiente */
-.cobro-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,69,69,.07);border:1px solid rgba(255,69,69,.25);border-radius:6px;margin-bottom:4px;cursor:pointer;transition:all .1s;}
-.cobro-row:hover{background:rgba(255,69,69,.13);border-color:rgba(255,69,69,.45);}
+.cobro-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,171,0,.06);border:1px solid rgba(255,171,0,.2);border-left:3px solid var(--amber);border-radius:6px;margin-bottom:4px;cursor:pointer;transition:all .1s;}
+.cobro-row:hover{background:rgba(255,171,0,.1);border-color:rgba(255,171,0,.35);}
 </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <meta name="google-signin-client_id" content="921894159659-f28bl8jcn0h2hdbarosqtltrk6en36do.apps.googleusercontent.com">
@@ -1419,12 +1421,12 @@ function renderOrders(q='',filter='all'){
           const isDeliveredUnpaid=o.status==='entregada'&&!(total>0&&pagado>=total-0.01);
           const isSelected=_lpSelectedId===o.id;
           const extraClass=isDeliveredPaid?' lp-done':isDeliveredUnpaid?' lp-cobro':'';
-          return`<div class="lp-item${isSelected?' selected':''}${extraClass}" onclick="openOrderDesktop('${o.id}')" style="border-left-color:${sc}">
+          return`<div class="lp-item${isSelected?' selected':''}${extraClass}" onclick="openOrderDesktop('${o.id}')" oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')" style="border-left-color:${sc}">
             <div class="lp-item-dot" style="background:${sc}"></div>
             <div class="lp-item-body">
-              <div class="lp-item-num">${esc(o.numero||o.id.slice(0,8).toUpperCase())}${isDeliveredUnpaid?` <span style="color:#3ddc84;font-size:9px">● $</span>`:''}</div>
-              <div class="lp-item-name">${clName(cl)}</div>
-              <div class="lp-item-meta">${o.fecha_entrega?fmtDateES(o.fecha_entrega)+' · ':''}${esc(getOrderLabel(o))}</div>
+              <div class="lp-item-name" style="font-weight:700">${esc(getOrderProductName(o)||clName(cl)||'Sin producto')}${isDeliveredUnpaid?` <span style="color:#3ddc84;font-size:9px">$</span>`:''}</div>
+              <div class="lp-item-meta">${esc(clName(cl))}</div>
+              <div class="lp-item-meta" style="font-family:'DM Mono',monospace;font-size:9px">${esc(o.numero||o.id.slice(0,8).toUpperCase())}${o.fecha_entrega?' · '+fmtDateES(o.fecha_entrega):''}</div>
             </div>
             <div class="lp-item-amt" style="${isDeliveredPaid?'color:var(--t3)':isDeliveredUnpaid?'color:#3ddc84':''}">$${fmtS(total)}</div>
           </div>`;
@@ -1581,6 +1583,10 @@ function showOrderCtxMenu(e, ordId) {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Editar orden
     </div>
+    <div class="ctx-item" onclick="closeCtxMenu();showAddOpNoteModal('${ordId}')" style="color:var(--red)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      ⚡ Nota operativa
+    </div>
     <div class="ctx-item" onclick="closeCtxMenu();duplicateOrder('${ordId}')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       Duplicar orden
@@ -1733,7 +1739,24 @@ function renderOrderForm(){
     </div>
     <div>
       <div class="lbl">Notas</div>
-      <input class="inp" placeholder="Instrucciones..." value="${esc(OF.notas)}" onchange="OF.notas=this.value" style="font-size:12px">
+      <input class="inp" placeholder="Instrucciones generales..." value="${esc(OF.notas)}" onchange="OF.notas=this.value" style="font-size:12px">
+    </div>
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="lbl" style="color:var(--red);margin-bottom:0">⚡ Notas operativas</div>
+        <button class="btn btn-ghost" style="font-size:10px;padding:2px 8px;color:var(--red);border-color:rgba(255,69,69,.3)" onclick="showAddOpNoteModal('${OF.id||''}')">+ Agregar</button>
+      </div>
+      ${(() => {
+        const active = OF.id ? getActiveOpNotes(DATA.ordenes.find(x=>x.id===OF.id)||{notas_operativas_json:'[]'}) : [];
+        if(!active.length) return '<div style="font-size:11px;color:var(--t3);padding:4px 0">Sin notas operativas activas</div>';
+        return `<div style="background:rgba(255,69,69,.06);border:1px solid rgba(255,69,69,.2);border-radius:6px;padding:6px 8px">
+          ${active.map(n=>`<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,69,69,.1)">
+            <span style="color:var(--red);font-size:11px;flex-shrink:0">⚡</span>
+            <span style="font-size:12px;flex:1;line-height:1.4">${esc(n.texto)}</span>
+            <button onclick="resolveOpNote('${OF.id}','${n.id}');renderOrderForm()" style="font-size:9px;font-weight:800;color:var(--c2);background:rgba(61,220,132,.12);border:1px solid rgba(61,220,132,.3);border-radius:3px;padding:1px 6px;cursor:pointer;flex-shrink:0">✓</button>
+          </div>`).join('')}
+        </div>`;
+      })()}
     </div>
   </div>
   <!-- LINES -->
@@ -2703,7 +2726,7 @@ function buildTotalsHTML(tot){
           onchange="OF.descuento_pct=parseFloat(this.value)||0;refreshTotals()"
           oninput="OF.descuento_pct=parseFloat(this.value)||0;refreshTotals()">&nbsp;%
       </span>
-      <span style="font-family:'DM Mono',monospace;color:${tot.disc>0?'var(--red)':'var(--t3)'}">${tot.disc>0?'−$'+fmt(tot.disc):'—'}</span>
+      <span style="font-family:'DM Mono',monospace;color:${tot.disc>0?'var(--amber)':'var(--t3)'}">${tot.disc>0?'−$'+fmt(tot.disc):'—'}</span>
     </div>
     ${cargosRows}
     <div class="tot-total"><span>Total</span><span style="font-family:'DM Mono',monospace">$${fmt(tot.total)}&nbsp;<span style="font-size:10px;opacity:.6">${DEFAULT_MONEDA}</span></span></div>`;
@@ -3110,18 +3133,26 @@ function renderKanban() {
         ondragstart="event.dataTransfer.setData('id','${o.id}');this.classList.add('drag-src')"
         ondragend="this.classList.remove('drag-src')"
         ondblclick="event.stopPropagation();openEditOrder('${o.id}')"
-        onclick="openEditOrder('${o.id}')">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
-          <div class="kanban-card-num">${esc(o.numero || o.id.slice(0,8).toUpperCase())}</div>
-          <div style="font-size:9px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t2)">$${fmtS(total)}</div>
+        onclick="openEditOrder('${o.id}')"
+        oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+          <span style="width:7px;height:7px;border-radius:50%;background:${cardColor};flex-shrink:0;display:inline-block"></span>
+          <div style="font-size:13px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="kprod-${o.id}">${esc(getOrderProductName(o)||'Sin producto')}</div>
+          <div style="font-size:10px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t2);flex-shrink:0">$${fmtS(total)}</div>
         </div>
         <div class="kanban-card-client">${clName(cl)}</div>
+        <div class="kanban-card-num" style="margin-top:3px">${esc(o.numero || o.id.slice(0,8).toUpperCase())}</div>
         ${isDeliveredPaid?`<div style="margin-top:4px;font-size:9px;font-weight:800;color:#2a8c4e;background:rgba(26,92,50,0.2);border-radius:3px;padding:2px 6px;display:inline-block">✓ PAGADA</div>`:
           isDeliveredUnpaid?`<div style="margin-top:4px;font-size:9px;font-weight:800;color:#3ddc84;background:rgba(61,220,132,0.15);border-radius:3px;padding:2px 6px;display:inline-block">⏳ COBRO PENDIENTE</div>`:''}
-        ${o.notas?`<div style="font-size:10px;color:var(--t3);margin-top:2px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.notas)}</div>`:''}
         <div style="margin-top:5px;font-size:10px;color:var(--t3);line-height:1.4" id="klines-${o.id}">
-          <span style="color:var(--t3);font-style:italic">Cargando...</span>
+          <span style="color:var(--t3);font-style:italic;font-size:9px">cargando productos...</span>
         </div>
+        ${hasActiveOpNotes(o)?`<div style="margin-top:5px;padding:4px 6px;background:rgba(255,69,69,.1);border:1px solid rgba(255,69,69,.25);border-radius:4px">
+          ${getActiveOpNotes(o).map(n=>`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+            <span style="color:var(--red);font-size:9px;flex-shrink:0">⚡</span>
+            <span style="font-size:10px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(n.texto)}</span>
+          </div>`).join('')}
+        </div>`:''}
         ${o.fecha_entrega?`<div style="margin-top:5px;font-size:10px;font-weight:700;color:${urgent?'var(--red)':daysLeft<=3?'var(--amber)':'var(--t3)'}">${urgent?'⚠ ':''}${fmtDateES(o.fecha_entrega)}${daysLeft!==null?' ('+daysLeft+'d)':''}</div>`:''}
       </div>`;
     }).join('');
@@ -3163,6 +3194,10 @@ async function loadKanbanLines(){
       const lines=await sb('orden_lineas',`select=producto_nombre,cantidad,status_linea&orden_id=eq.${o.id}&order=created_at`);
       if(!lines||!lines.length){el.innerHTML='<span style="color:var(--t3)">Sin productos</span>';continue;}
       cacheOrderLines(o.id, lines);
+      cacheOrderLines(o.id, lines);
+      // Update product name in card header
+      const prodEl = document.getElementById('kprod-'+o.id);
+      if(prodEl) prodEl.textContent = lines.map(l=>l.producto_nombre||'').filter(Boolean).join(', ') || 'Sin producto';
       el.innerHTML=lines.map(l=>{
         const st=l.status_linea||'pendiente';
         const dot=st==='listo'?'🟢':st==='en_proceso'?'🟡':'⚪';
@@ -3413,6 +3448,7 @@ function showCalContextMenu(e,dateStr){
   setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
 }
 function closeCtxMenu(){document.getElementById('ctx-menu')?.remove();}
+document.addEventListener('mousemove', e => { window._lastMouseEvent = e; });
 
 async function dashQuickStatus(ordId, newStatus) {
   try {
@@ -3466,6 +3502,13 @@ function showClientCtxMenu(e, cid) {
 }
 
 // ── Taller card context menu ──
+function showTallerCtxMenuById(lineId) {
+  const l = _tallerLines.find(x=>x.line_id===lineId);
+  if(!l) return;
+  // Build a fake event at mouse position
+  const lastE = window._lastMouseEvent || {clientX:200,clientY:200};
+  showTallerCtxMenu(lastE, l);
+}
 function showTallerCtxMenu(e, l) {
   closeCtxMenu();
   const menu = document.createElement('div');
@@ -3668,7 +3711,7 @@ function renderProducts(q=''){
       <div class="lp-body">
         ${list.length===0?`<div style="padding:20px;text-align:center;color:var(--t3);font-size:11px">Sin productos</div>`
         :list.map(p=>{const cat=USER_CATS.find(c=>c.name===p.categoria);const cc=cat?.color||'var(--border2)';
-          return`<div class="lp-item" onclick="editProduct('${p.id}')">
+          return`<div class="lp-item" onclick="editProduct('${p.id}')" oncontextmenu="event.preventDefault();showProductCtxMenu(event,'${p.id}')">
             <div style="width:7px;height:7px;border-radius:50%;background:${cc};flex-shrink:0"></div>
             <div class="lp-item-body">
               <div class="lp-item-name">${esc(p.nombre)}</div>
@@ -3688,9 +3731,20 @@ function renderProducts(q=''){
       </div>
     </div>
     <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">
-      <button onclick="window._prodPageTab='list';renderProducts()" style="padding:7px 16px;background:transparent;border:none;font-size:12px;font-weight:600;color:${_prodTab==='list'?'var(--t1)':'var(--t3)'};border-bottom:2px solid ${_prodTab==='list'?'var(--acc)':'transparent'};cursor:pointer;margin-bottom:-1px">Catálogo</button>
-      <button onclick="window._prodPageTab='rules';renderProducts()" style="padding:7px 16px;background:transparent;border:none;font-size:12px;font-weight:600;color:${_prodTab==='rules'?'var(--t1)':'var(--t3)'};border-bottom:2px solid ${_prodTab==='rules'?'var(--acc)':'transparent'};cursor:pointer;margin-bottom:-1px">⚡ Reglas auto-cat.</button>
+      <button onclick="window._prodPageTab='list';renderProducts()" style="padding:7px 14px;background:transparent;border:none;font-size:12px;font-weight:600;color:${_prodTab==='list'?'var(--t1)':'var(--t3)'};border-bottom:2px solid ${_prodTab==='list'?'var(--acc)':'transparent'};cursor:pointer;margin-bottom:-1px">Catálogo</button>
+      <button onclick="window._prodPageTab='cats';renderProducts()" style="padding:7px 14px;background:transparent;border:none;font-size:12px;font-weight:600;color:${_prodTab==='cats'?'var(--t1)':'var(--t3)'};border-bottom:2px solid ${_prodTab==='cats'?'var(--acc)':'transparent'};cursor:pointer;margin-bottom:-1px">🏷 Categorías</button>
+      <button onclick="window._prodPageTab='rules';renderProducts()" style="padding:7px 14px;background:transparent;border:none;font-size:12px;font-weight:600;color:${_prodTab==='rules'?'var(--t1)':'var(--t3)'};border-bottom:2px solid ${_prodTab==='rules'?'var(--acc)':'transparent'};cursor:pointer;margin-bottom:-1px">⚡ Reglas</button>
     </div>
+    ${_prodTab==='cats'?`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--t3)">Define las categorías y cómo se cobran los productos de cada una.</div>
+      <button class="btn btn-acc" onclick="addUserCat();window._prodPageTab='cats';renderProducts()" style="font-size:12px;padding:6px 14px">+ Categoría</button>
+    </div>
+    ${USER_CATS.length===0?`<div style="padding:36px;text-align:center;background:var(--s1);border:1px solid var(--border);border-radius:var(--r)">
+      <div style="font-size:13px;color:var(--t3);margin-bottom:12px">Sin categorías — agrega las que uses en tu negocio</div>
+      <div style="font-size:11px;color:var(--t3);line-height:1.6">Ejemplos: Imprenta, Señalética, Textiles, Servicios, Gran formato...</div>
+    </div>`:buildCatListInProducts()}
+    `:''}
     ${_prodTab==='rules'?`
     <div class="card" style="margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -3876,7 +3930,7 @@ function renderClients(q=''){
           const total=ords.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
           const ini=(c.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
           const notes=(_clNotes[c.id]||[]).length;
-          return`<div class="lp-item${_lpSelectedId===c.id?' selected':''}" onclick="openClientProfileDesktop('${c.id}')">
+          return`<div class="lp-item${_lpSelectedId===c.id?' selected':''}" onclick="openClientProfileDesktop('${c.id}')" oncontextmenu="event.preventDefault();showClientCtxMenu(event,'${c.id}')">
             <div style="width:28px;height:28px;border-radius:50%;background:var(--acc-dim2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--acc);flex-shrink:0">${ini}</div>
             <div class="lp-item-body">
               <div class="lp-item-name">${esc(c.nombre)}</div>
@@ -4577,6 +4631,40 @@ function buildCatList(){
     </div>`).join('');
 }
 
+function buildCatListInProducts() {
+  // Same as buildCatList but save/delete re-renders Products page
+  return USER_CATS.map((cat,i)=>`
+    <div class="card" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <input class="inp" style="font-size:13px;font-weight:700;flex:1" value="${esc(cat.name)}"
+          oninput="USER_CATS[${i}].name=this.value;saveUserCats()" id="pcname-${i}">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;max-width:140px">
+          ${CAT_COLORS.map(c=>`<div style="width:14px;height:14px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${cat.color===c?'var(--t1)':'transparent'}" onclick="USER_CATS[${i}].color='${c}';saveUserCats();window._prodPageTab='cats';renderProducts()"></div>`).join('')}
+        </div>
+        <button class="btn-icon del" onclick="USER_CATS.splice(${i},1);saveUserCats();window._prodPageTab='cats';renderProducts()" title="Eliminar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        ${INC_TYPES.map(t=>`<button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;${cat.incrementType===t.id?'background:var(--acc-dim);border-color:var(--acc);color:var(--acc);':''}"
+          onclick="USER_CATS[${i}].incrementType='${t.id}';saveUserCats();window._prodPageTab='cats';renderProducts()"
+          title="${t.desc}">${t.label}</button>`).join('')}
+      </div>
+      ${cat.incrementType==='tiers'?`
+      <div style="font-size:10px;color:var(--t3);margin-bottom:4px">Tiers de cantidad → precio</div>
+      ${(cat.config?.tiers||[]).map((t,ti)=>`
+        <div style="display:flex;gap:6px;margin-bottom:4px;align-items:center">
+          <input class="inp" type="number" min="1" value="${t[0]}" style="font-size:12px" onchange="USER_CATS[${i}].config.tiers[${ti}][0]=parseInt(this.value)||1;saveUserCats()">
+          <input class="inp" type="number" min="0" step="any" value="${t[1]}" style="font-size:12px" placeholder="$" onchange="USER_CATS[${i}].config.tiers[${ti}][1]=parseFloat(this.value)||0;saveUserCats()">
+          <button class="btn-icon del" onclick="USER_CATS[${i}].config.tiers.splice(${ti},1);saveUserCats();window._prodPageTab='cats';renderProducts()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`).join('')}
+      <button class="btn btn-ghost" style="font-size:11px;padding:3px 10px;margin-top:2px"
+        onclick="if(!USER_CATS[${i}].config)USER_CATS[${i}].config={};if(!USER_CATS[${i}].config.tiers)USER_CATS[${i}].config.tiers=[];USER_CATS[${i}].config.tiers.push([1,0]);saveUserCats();window._prodPageTab='cats';renderProducts()">+ Tier</button>
+      `:''}
+    </div>`).join('');
+}
 function buildIncConfig(cat,i){
   const type=cat.incrementType||'regular';
   const cfg=cat.config||{};
@@ -5612,7 +5700,8 @@ function _renderTallerBoard() {
             ? `<img src="${l.img_url}" style="width:100%;height:52px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:block" onerror="this.style.display='none'">`
             : '';
 
-          return `<div class="tc" onclick="openEditOrder('${l.orden_id}')" oncontextmenu="event.preventDefault();showTallerCtxMenu(event,l)">
+          return `<div class="tc" onclick="openEditOrder('${l.orden_id}')"
+            oncontextmenu="event.preventDefault();event.stopPropagation();showTallerCtxMenuById('${l.line_id}')">
             <div class="tc-accent" style="background:${catColor}"></div>
             ${imgHtml}
             <div class="tc-prod">${esc(l.producto)}</div>
@@ -5626,6 +5715,14 @@ function _renderTallerBoard() {
               </div>
               ${dateLabel ? `<div class="tc-date ${urgentClass}">${dateLabel}</div>` : ''}
               ${l.notas ? `<div style="font-size:10px;color:var(--t3);font-style:italic;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(l.notas)}</div>` : ''}
+              ${(() => {
+                const ord = DATA.ordenes.find(x=>x.id===l.orden_id);
+                const opNotes = ord ? getActiveOpNotes(ord) : [];
+                if(!opNotes.length) return '';
+                return `<div style="margin-top:4px;padding:3px 6px;background:rgba(255,69,69,.1);border-left:2px solid var(--red);border-radius:3px">
+                  ${opNotes.map(n=>`<div style="font-size:10px;color:var(--red);font-weight:600">⚡ ${esc(n.texto)}</div>`).join('')}
+                </div>`;
+              })()}
             </div>
             <div class="tc-state" onclick="event.stopPropagation()">
               <button class="tc-s${stateKey==='pendiente'?' s-p':''}" onclick="setTallerLineStatus('${l.line_id}','${l.orden_id}','pendiente')">Pend.</button>
@@ -5747,6 +5844,82 @@ const NOTE_CFG = {
   cotizacion:{label:'Cotización',icon:'💰',bg:'rgba(212,255,71,.12)',  color:'#d4ff47'},
 };
 
+// ════════════════════════════════════════════════════════
+//  NOTAS OPERATIVAS — per-order operational notes
+// ════════════════════════════════════════════════════════
+function getOpNotes(o) {
+  try { return JSON.parse(o.notas_operativas_json || '[]'); } catch(e) { return []; }
+}
+function getActiveOpNotes(o) {
+  return getOpNotes(o).filter(n => !n.resuelta);
+}
+function hasActiveOpNotes(o) {
+  return getActiveOpNotes(o).length > 0;
+}
+
+async function addOpNote(ordId, texto) {
+  const o = DATA.ordenes.find(x => x.id === ordId);
+  if (!o || !texto.trim()) return;
+  const notes = getOpNotes(o);
+  notes.push({ id: Date.now().toString(36), texto: texto.trim(), ts: new Date().toISOString(), resuelta: false });
+  o.notas_operativas_json = JSON.stringify(notes);
+  try {
+    await sb('ordenes', `id=eq.${ordId}`, 'PATCH', { notas_operativas_json: o.notas_operativas_json });
+  } catch(e) { toast('Error guardando nota: ' + e.message); }
+}
+
+async function resolveOpNote(ordId, noteId) {
+  const o = DATA.ordenes.find(x => x.id === ordId);
+  if (!o) return;
+  const notes = getOpNotes(o);
+  const n = notes.find(x => x.id === noteId);
+  if (n) n.resuelta = true;
+  o.notas_operativas_json = JSON.stringify(notes);
+  try {
+    await sb('ordenes', `id=eq.${ordId}`, 'PATCH', { notas_operativas_json: o.notas_operativas_json });
+    renderDashboard();
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+// Quick-add note modal from any view
+function showAddOpNoteModal(ordId) {
+  closeModal();
+  const o = DATA.ordenes.find(x => x.id === ordId);
+  if (!o) return;
+  const cl = DATA.clientes.find(c => c.id === o.cliente_id);
+  const existing = getActiveOpNotes(o);
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay'; overlay.id = 'cmodal';
+  overlay.onclick = e => { if(e.target===overlay) closeModal(); };
+  overlay.innerHTML = `<div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="modal-title" style="color:var(--red)">⚡ Nota operativa</div>
+    <div class="modal-sub" style="margin-bottom:4px">
+      <strong>${esc(getOrderProductName(o)||'Sin producto')}</strong> · ${esc(clName(cl))}
+    </div>
+    ${existing.length ? `<div style="margin-bottom:12px;padding:8px 10px;background:rgba(255,69,69,.08);border:1px solid rgba(255,69,69,.2);border-radius:6px">
+      ${existing.map(n=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,69,69,.1)">
+        <div style="flex:1;font-size:12px;color:var(--t1)">${esc(n.texto)}</div>
+        <button onclick="resolveOpNote('${ordId}','${n.id}');closeModal()" style="font-size:9px;font-weight:800;color:var(--c2);background:rgba(61,220,132,.15);border:1px solid rgba(61,220,132,.3);border-radius:4px;padding:2px 7px;cursor:pointer;white-space:nowrap;flex-shrink:0">✓ Resuelto</button>
+      </div>`).join('')}
+    </div>` : ''}
+    <textarea class="inp" id="op-note-text" placeholder="Escribe la indicación operativa..." rows="3"
+      style="font-size:13px;resize:vertical;width:100%;box-sizing:border-box" autofocus></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-acc" style="flex:1;justify-content:center;background:var(--red);border-color:var(--red)" onclick="(async()=>{
+        const t=document.getElementById('op-note-text').value;
+        if(!t.trim()){return;}
+        await addOpNote('${ordId}',t);
+        closeModal();
+        renderDashboard();
+        toast('⚡ Nota operativa agregada');
+      })()">Agregar nota</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('op-note-text')?.focus(), 50);
+}
+
 function renderDashboard(){
   const now = new Date();
   const todayStr = now.toISOString().slice(0,10);
@@ -5803,6 +5976,7 @@ function renderDashboard(){
         <div style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t1)">$${fmtS(parseFloat(o.total||0))}</div>
         ${daysLeft!==null?`<div style="font-size:9px;font-weight:800;color:${color};padding:1px 5px;background:${color}18;border-radius:4px">${dayLabel}</div>`:''}
         <div style="display:flex;gap:3px;margin-top:2px">
+          <button title="Nota operativa" onclick="event.stopPropagation();showAddOpNoteModal('${o.id}')" style="width:20px;height:20px;border-radius:4px;border:1px solid rgba(255,69,69,.35);background:${hasActiveOpNotes(o)?'rgba(255,69,69,.15)':'var(--s2)'};cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--red)">⚡</button>
           <button title="Marcar lista" onclick="event.stopPropagation();dashQuickStatus('${o.id}','lista')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--border2);background:var(--s2);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--c2)" onmouseover="this.style.background='var(--c2-dim)'" onmouseout="this.style.background='var(--s2)'">✓</button>
           <button title="Marcar entregada" onclick="event.stopPropagation();dashQuickStatus('${o.id}','entregada')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--border2);background:var(--s2);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--acc)" onmouseover="this.style.background='var(--acc-dim)'" onmouseout="this.style.background='var(--s2)'">★</button>
           <button title="Más opciones" onclick="event.stopPropagation();showOrderCtxMenu(event,'${o.id}')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--border2);background:var(--s2);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--t2)" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">⋯</button>
@@ -5833,17 +6007,17 @@ function renderDashboard(){
     return `<div class="cobro-row" oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')">
       ${thumb
         ? `<img src="${thumb}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)" onerror="this.style.display='none'">`
-        : `<div style="width:36px;height:36px;border-radius:5px;background:rgba(255,69,69,.15);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">💸</div>`}
+        : `<div style="width:36px;height:36px;border-radius:5px;background:rgba(255,171,0,.15);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">💸</div>`}
       <div style="flex:1;min-width:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
         <div style="font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(getOrderProductName(o)||'Sin producto')}</div>
         <div style="font-size:11px;color:var(--t2)">${esc(clName(cl))}${entrega?' · '+entrega:''}</div>
         <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
           <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${getOrderColor(o)};flex-shrink:0"></span>
-          <span style="font-size:9px;color:var(--t3);font-family:'DM Mono',monospace">${esc(o.numero||o.id.slice(0,8).toUpperCase())}${days!==null&&days>0?` · <span style="color:var(--red);font-weight:700">${days}d sin cobrar</span>`:''}</span>
+          <span style="font-size:9px;color:var(--t3);font-family:'DM Mono',monospace">${esc(o.numero||o.id.slice(0,8).toUpperCase())}${days!==null&&days>0?` · <span style="color:var(--amber);font-weight:700">${days}d sin cobrar</span>`:''}</span>
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-        <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--red)">-$${fmtS(debe)}</div>
+        <div style="font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--amber)">-$${fmtS(debe)}</div>
         ${parseFloat(o.pagado)>0?`<div style="font-size:9px;color:var(--t3)">Pagó $${fmtS(parseFloat(o.pagado))}</div>`:''}
         ${cl?.telefono?`<a href="https://wa.me/${(cl.telefono||'').replace(/[^0-9]/g,'')}" target="_blank" onclick="event.stopPropagation()" style="font-size:9px;color:#25d366;text-decoration:none;padding:1px 6px;border:1px solid rgba(37,211,102,.3);border-radius:4px;margin-top:1px">WhatsApp</a>`:''}
       </div>
@@ -5899,7 +6073,7 @@ function renderDashboard(){
         <button class="dash-remove-btn" title="Quitar del dashboard" onclick="dashRemovePin('${cid}',event)">×</button>
       </div>
       <div class="dash-card-body">
-        ${pendCob.length?`<div style="margin-bottom:7px">${pendCob.map(o=>{const d=parseFloat(o.total||0)-parseFloat(o.pagado||0);return`<div style="font-size:11px;color:var(--red);font-weight:700;padding:2px 0">⚠ $${fmtS(d)} pendiente de cobro</div>`;}).join('')}</div>`:''}
+        ${pendCob.length?`<div style="margin-bottom:7px">${pendCob.map(o=>{const d=parseFloat(o.total||0)-parseFloat(o.pagado||0);return`<div style="font-size:11px;color:var(--amber);font-weight:600;padding:2px 0">💸 $${fmtS(d)} por cobrar</div>`;}).join('')}</div>`:''}
         ${actOrd.length?`<div style="margin-bottom:6px">${actOrd.slice(0,3).map(o=>{
           const sc=getOrderColor(o);
           const days=o.fecha_entrega?Math.round((new Date(o.fecha_entrega)-now)/86400000):null;
@@ -5988,8 +6162,8 @@ function renderDashboard(){
         <div class="stat-val" style="color:var(--c1)">$${fmtS(monthTotal)}</div>
         <div class="stat-key">Facturado este mes</div>
       </div>
-      <div class="stat" style="${cobroPendiente.length>0?'border-color:rgba(255,69,69,.35)':''}">
-        <div class="stat-val" style="color:${cobroPendiente.length>0?'var(--red)':'var(--t3)'}">$${fmtS(pendingCobro)}</div>
+      <div class="stat" style="${cobroPendiente.length>0?'border-color:rgba(255,171,0,.35)':''}">
+        <div class="stat-val" style="color:${cobroPendiente.length>0?'var(--amber)':'var(--t3)'}">$${fmtS(pendingCobro)}</div>
         <div class="stat-key">Por cobrar</div>
       </div>
       <div class="stat">
@@ -5997,6 +6171,40 @@ function renderDashboard(){
         <div class="stat-key">Valor en pipeline</div>
       </div>
     </div>
+
+    <!-- ⚡ Órdenes con notas operativas activas — FIRST -->
+    ${(() => {
+      const withNotes = DATA.ordenes.filter(o => !['entregada','cancelada'].includes(o.status) && hasActiveOpNotes(o));
+      if (!withNotes.length) return '';
+      return `<div style="margin:16px 26px 0">
+        <div style="font-size:10px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          <span style="animation:pulse-dot 1.4s ease-in-out infinite;display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red)"></span>
+          ⚡ Notas operativas activas
+          <span style="background:rgba(255,69,69,.2);padding:1px 7px;border-radius:8px;font-size:10px">${withNotes.length}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${withNotes.map(o => {
+            const cl = DATA.clientes.find(c=>c.id===o.cliente_id);
+            const notes = getActiveOpNotes(o);
+            let imgs=[]; try{const j=JSON.parse(o.imagenes_json||'{}');imgs=j.imgs||[];}catch(e){}
+            const thumb = imgs.length ? imgs[imgs.length-1].url : null;
+            return `<div style="background:rgba(255,69,69,.06);border:1px solid rgba(255,69,69,.25);border-left:3px solid var(--red);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start" oncontextmenu="event.preventDefault();showOrderCtxMenu(event,'${o.id}')">
+              ${thumb ? `<img src="${thumb}" style="width:40px;height:40px;object-fit:cover;border-radius:5px;flex-shrink:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)" onerror="this.style.display='none'">` : ''}
+              <div style="flex:1;min-width:0;cursor:pointer" onclick="navigate('orders');setTimeout(()=>openEditOrder('${o.id}'),60)">
+                <div style="font-size:13px;font-weight:700;color:var(--t1)">${esc(getOrderProductName(o)||'Sin producto')}</div>
+                <div style="font-size:11px;color:var(--t2);margin-bottom:6px">${esc(clName(cl))}</div>
+                ${notes.map(n=>`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
+                  <span style="color:var(--red);font-size:11px;flex-shrink:0;margin-top:1px">⚡</span>
+                  <span style="font-size:12px;color:var(--t1);flex:1;line-height:1.4">${esc(n.texto)}</span>
+                  <button onclick="event.stopPropagation();resolveOpNote('${o.id}','${n.id}')" style="font-size:9px;font-weight:800;color:var(--c2);background:rgba(61,220,132,.12);border:1px solid rgba(61,220,132,.3);border-radius:4px;padding:2px 7px;cursor:pointer;white-space:nowrap;flex-shrink:0">✓ Listo</button>
+                </div>`).join('')}
+              </div>
+              <button onclick="showAddOpNoteModal('${o.id}')" style="flex-shrink:0;width:26px;height:26px;border-radius:5px;border:1px solid rgba(255,69,69,.3);background:transparent;color:var(--red);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px" title="Agregar nota">+</button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    })()}
 
     <!-- Two-col: urgentes + cobros -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 26px 0">
@@ -6009,7 +6217,7 @@ function renderDashboard(){
         ${thisWeek.length?urgSection('Esta semana',thisWeek,'var(--t2)'):''}
       </div>
       <div>
-        <div style="font-size:10px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">💸 Cobros pendientes${cobroPendiente.length?` <span style="background:rgba(255,69,69,.2);padding:1px 6px;border-radius:8px">${cobroPendiente.length}</span>`:''}</div>
+        <div style="font-size:10px;font-weight:800;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">💸 Cobros pendientes${cobroPendiente.length?` <span style="background:rgba(255,171,0,.18);color:var(--amber);padding:1px 6px;border-radius:8px">${cobroPendiente.length}</span>`:''}</div>
         ${cobroPendiente.length===0
           ?`<div style="font-size:12px;color:var(--t3);padding:16px 0">✓ Todo cobrado</div>`
           :cobroPendiente.map(cobroRow).join('')}
